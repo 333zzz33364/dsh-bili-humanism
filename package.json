@@ -1,0 +1,67 @@
+{
+  "name": "dsh-bili-humanism",
+  "version": "0.1.0",
+  "description": "在人的创作与生活中学习理解人：B站只读取稿、证据手账与本地收件箱",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "bin": {
+    "bili-humanism": "./bin/cli.mjs"
+  },
+  "files": [
+    "index.js",
+    "cordis.patch.yml",
+    "lib",
+    "bin",
+    "prompts",
+    "scripts/media.py",
+    "README.md",
+    "LICENSE",
+    "NOTICE.md",
+    "docs"
+  ],
+  "engines": {
+    "node": ">=24.0.0",
+    "dsh": ">=0.2.1-rc.2 <0.3.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-tools": "0.2.1-rc.2",
+    "@deepseek-ai/schemastery": "3.18.5"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-tools": {
+      "optional": true
+    },
+    "@deepseek-ai/schemastery": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh-tools": "0.2.1-rc.2",
+    "@deepseek-ai/schemastery": "3.18.5",
+    "prettier": "3.6.2"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "check": "node scripts/check.mjs",
+    "demo": "node bin/cli.mjs demo"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/InariNGT-Ofiicial/dsh-bili-humanism.git"
+  },
+  "license": "MIT",
+  "keywords": [
+    "dsh-plugin",
+    "bilibili",
+    "humanism",
+    "local-first"
+  ]
+}

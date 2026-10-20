@@ -1,0 +1,11 @@
+node_modules/
+work/
+outputs/
+*.sqlite*
+*.db*
+*.tgz
+.env*
+_auth/
+coverage/
+*.log
+__pycache__/

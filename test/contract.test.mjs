@@ -1,0 +1,46 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import * as plugin from "../index.js";
+test("pinned real DSH defineTool validates every registration and executes guide/status", async () => {
+  const tools = new Map();
+  let dispose;
+  plugin.apply(
+    {
+      tools: {
+        register(t) {
+          assert.ok(t.parameters && t.output?.schema);
+          assert.ok(!tools.has(t.name));
+          tools.set(t.name, t);
+        },
+      },
+      on(event, fn) {
+        assert.equal(event, "dispose");
+        dispose = fn;
+      },
+    },
+    { dataDir: mkdtempSync(join(tmpdir(), "humanism-contract-")) },
+  );
+  assert.equal(tools.size, 10);
+  const status = JSON.parse(
+    await tools.get("bili_humanism_status").execute({}, {}),
+  );
+  assert.deepEqual(status.platformWriteTools, []);
+  assert.equal(status.scheduled, false);
+  const injected = JSON.parse(
+    await tools
+      .get("bili_humanism_read")
+      .execute({ video: "BV1d8pU6xEZX", force: true }, {}),
+  );
+  assert.equal(injected.error, "UNKNOWN_PARAMETER");
+  const guide = JSON.parse(
+    await tools.get("bili_humanism_guide").execute({}, {}),
+  );
+  assert.ok(guide.includes("尊严"));
+  assert.ok(
+    ![...tools.keys()].some((n) => /publish|comment|like|resume/.test(n)),
+  );
+  dispose();
+});

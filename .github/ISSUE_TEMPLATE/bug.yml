@@ -1,0 +1,22 @@
+name: Bug report / 报错
+description: 报告可复现的问题（请先脱敏）
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Plugin / DSH / Node / OS versions
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps and expected behavior / 复现与预期
+      description: 可附公开视频 BV。不要附凭据、signed URL、账号档案、完整字幕或私人手账。
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Actual result and sanitized error code / 实际结果和脱敏错误码
+    validations:
+      required: true
