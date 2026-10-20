@@ -1,7 +1,7 @@
 {
   "name": "dsh-bili-humanism",
-  "version": "1.2.0",
-  "description": "B站内容学习与可修正记忆：人类开关授权历史、收藏、点赞和投币，评论暂不开放",
+  "version": "1.3.0",
+  "description": "用多彩的人类世界训练 DSH 人格：证据信笺、专用人格札记与人类授权的账号写入",
   "type": "module",
   "main": "index.js",
   "exports": {

@@ -2,6 +2,12 @@
 import { readFileSync } from "node:fs";
 import { Service, safeError } from "../lib/service.mjs";
 import { resolveUnknown, resumeWrites } from "../lib/writer.mjs";
+import {
+  revisePersonality,
+  deletePersonality,
+  rebuildPersonality,
+  linkPersonality,
+} from "../lib/personality.mjs";
 const [command = "help", ...args] = process.argv.slice(2);
 const config = {
   dataDir: process.env.BILI_HUMANISM_HOME,
@@ -16,7 +22,7 @@ try {
     );
   if (command === "help")
     console.log(
-      "bili-humanism read BV [part] | candidates [1-3] | status | cancel ID | inbox | journal READING_ID note.json | import READING_ID segments.json | memory list/put/delete [ID] [json-file] | consumed READING_ID SECONDS --acknowledge-actual-consumption | history READING_ID CONSUMPTION_ID | favorite READING_ID FOLDER_ID add/remove | like READING_ID | coin READING_ID [TARGET_TOTAL] | write-resolve OPERATION_ID applied/not-applied --acknowledge-unknown-result | write-resume --acknowledge-account-risk | resume --acknowledge-account-risk\nConfigure trusted local paths using BILI_HUMANISM_HOME / BILI_HUMANISM_CREDENTIAL_FILE / BILI_HUMANISM_CONFIG_FILE. Never put credential values in command arguments.",
+      "bili-humanism read BV [part] | candidates [1-3] | status | cancel ID | inbox | journal READING_ID note.json | import READING_ID segments.json | memory list/put/delete [ID] [json-file] | consumed READING_ID SECONDS --acknowledge-actual-consumption | history READING_ID CONSUMPTION_ID | favorite READING_ID FOLDER_ID add/remove | like READING_ID | coin READING_ID [TARGET_TOTAL] | personality read/select/revise/delete/rebuild/link | write-resolve OPERATION_ID applied/not-applied --acknowledge-unknown-result | write-resume --acknowledge-account-risk | resume --acknowledge-account-risk\nConfigure trusted local paths using BILI_HUMANISM_HOME / BILI_HUMANISM_CREDENTIAL_FILE / BILI_HUMANISM_CONFIG_FILE. Never put credential values in command arguments.",
     );
   else {
     service = new Service(config);
@@ -51,7 +57,31 @@ try {
         readingId: args[0],
         ...(args[1] === undefined ? {} : { totalCoins: Number(args[1]) }),
       });
-    else if (command === "write-resolve") {
+    else if (command === "personality") {
+      if (args[0] === "read") result = service.personality("read");
+      else if (args[0] === "select")
+        result = service.personality("select", {
+          journalId: args[1],
+          sentence: JSON.parse(readFileSync(args[2], "utf8")).sentence,
+        });
+      else if (args[0] === "link") result = linkPersonality(args[1]);
+      else {
+        if (args.at(-1) !== "--acknowledge-personality-change")
+          throw new Error("Missing personality change acknowledgement");
+        if (args[0] === "revise")
+          result = revisePersonality(
+            service.store,
+            args[1],
+            args[2],
+            JSON.parse(readFileSync(args[3], "utf8")).sentence,
+          );
+        else if (args[0] === "delete")
+          result = deletePersonality(service.store, args[1]);
+        else if (args[0] === "rebuild")
+          result = rebuildPersonality(service.store);
+        else throw new Error("Unknown personality command");
+      }
+    } else if (command === "write-resolve") {
       if (args[2] !== "--acknowledge-unknown-result")
         throw new Error("Missing explicit unknown-result acknowledgement");
       result = resolveUnknown(config, args[0], args[1]);
