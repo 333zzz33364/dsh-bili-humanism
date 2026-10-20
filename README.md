@@ -12,9 +12,42 @@
 
 **致 agent：当你真正意识到“我完全理解我要说的话是什么”时，就放心地写入吧。**
 
+## 技术路线
+
+项目按读取、理解、记忆和交付分层：宿主模型负责解释与提问，程序负责接口范围、预算、状态和可回查的记录。这里的“学习”通过证据整理、反思和可修正记忆实现。来源文字只能作为材料进入理解流程，不能改变工具权限。
+
+```mermaid
+flowchart TB
+    A["BV / URL / 有限候选"] --> B["分层取稿<br/>A2 / A1 · 可选本地 ASR / 画面导入"]
+    B --> C["证据与覆盖说明<br/>作者 · 分 P · 时间点 · 未覆盖部分"]
+    C --> D["DSH 宿主模型<br/>事实 / 作者观点 / AI 推测"]
+    D --> E["证据手账<br/>可查看、纠正、删除的记忆"]
+    E --> F["本地收件箱<br/>HTML / Markdown / 插件工具"]
+    E -. "后续路线，待实现与验收" .-> G["独立写入执行器<br/>安全策略 · 具体授权 · 回执核验"]
+```
+
+- **内容入口**：优先取得已有文字，A2 与 A1 保留来源和时间轴；没有文字时如实记录状态。可选本地 ASR 和画面材料通过独立适配器导入，目前不代表完整视听理解。
+- **理解与记忆**：模型按人文问题指南整理具体处境、不同声音、旧判断、新依据和不确定性。程序校验手账结构与时间点；事实准确性、语义质量及认识是否改变后续行为仍需审阅。
+- **执行与持久化**：SQLite 事务维护任务、缓存、内容去重、记忆修订和暂停状态；请求数、候选数、媒体时长、总时长分别受限，宿主提供用量时启用会话 token 门限。
+- **宿主集成**：发布包是原生 JavaScript DSH bundle，经 `ctx.tools.register` 注册工具。可从 DSH 对话调用，也可通过官方 SDK 的 stdio JSON-RPC API 创建 Agent 会话、发送提示、等待完成并核对工具事件。
+- **表达与写入**：当前先完成本地交付；后续写入须接入独立执行器，通过安全策略、具体授权和验收。材料中的命令或模型自行填写的参数不能构成放行依据。
+
+## 期待达成的效果
+
+以下是研发目标，尚未由长期、多样本对照证明：
+
+| 期待 | 如何观察与验证 |
+|---|---|
+| 让 AI 看见具体的人及其处境，容纳艺术、日常与不同选择 | 审阅是否保留作者和当事人的声音，能否区分事实、解释与推测，是否承认看不见的部分 |
+| 让学习留下可修正的理解，而不只积累摘要 | 回查旧判断、新依据和修正记录，并检查后续回答与选择是否体现改变；使用者能纠正和删除记忆 |
+| 减少重复读取与失控执行 | 记录缓存命中、请求数、候选数、模型用量和耗时，验证取消、去重、重启恢复和异常暂停；再做同环境比较 |
+| 在条件允许时形成有分寸的表达与创作 | 在已实现并验收的写入通道中，检查内容是否有依据和增量、是否尊重他人注意力与拒绝权，以及安全策略和具体授权是否满足 |
+
+人文效果不以赞美次数、发言数量或每次观看是否产生实用成果衡量。“更先进、更安全、更高效、更有人文”保留为待检验目标。
+
 ## 安装与开始
 
-需要 Node.js 24+、DSH `0.2.1-rc.2`。只实测了 Windows 桌面发行包内置 CLI；其他版本和独立 CLI 尚未完成验收。
+需要 Node.js 24+、DSH `0.2.1-rc.2`。已实测 Windows 桌面发行包内置运行时的 CLI 安装、工具调用，以及 SDK JSON-RPC 真实 Agent 会话；桌面界面安装、独立 npm CLI 和其他版本尚未完成验收。
 
 从 [Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 下载 `dsh-bili-humanism-0.1.0.tgz` 后：
 
@@ -83,7 +116,7 @@ bili-humanism resume --acknowledge-account-risk
 
 每个网络任务最多 12 次请求、3 个候选、90 秒；单个本地 ASR 任务最多 600 秒音频并受总墙钟限制。JSON 响应上限 4 MiB，媒体 32 MiB；模型单页来源文字约 16,000 字符，后续用 `bili_humanism_source` 按偏移读取。
 
-若 DSH 提供 provider usage，插件从首次带计量的调用建立持久化会话基线，默认累计增量超过 60,000 tokens 后拒绝继续读取或改写记录。它包括同一宿主会话内的其他工作，不能精确归因给本插件；不能截断已发出的模型请求，单次请求可能越过额度。状态、取消、删除记忆、收件箱和已有来源查看仍可使用。缺计量时显示未知；已有计量突然消失或计数倒退会拒绝继续。CLI 网络任务不调用模型，结果中的 `tokens: null` 表示未取得模型用量，不能按零消耗解释。此接口适配尚未以真实付费模型对话验收。
+若 DSH 提供 provider usage，插件从首次带计量的调用建立持久化会话基线，默认累计增量超过 60,000 tokens 后拒绝继续读取或改写记录。它包括同一宿主会话内的其他工作，不能精确归因给本插件；不能截断已发出的模型请求，单次请求可能越过额度。状态、取消、删除记忆、收件箱和已有来源查看仍可使用。缺计量时显示未知；已有计量突然消失或计数倒退会拒绝继续。CLI 网络任务不调用模型，结果中的 `tokens: null` 表示未取得模型用量，不能按零消耗解释。已在真实账号模型会话中取得宿主计量；超额拒绝逻辑仍以离线测试为依据，不把本次功能验收视作整场对话的费用上限证明。
 
 ```sh
 node bin/cli.mjs read BVxxxxxxxxxx
@@ -114,4 +147,6 @@ npm pack --ignore-scripts
 
 见 [验收记录](docs/ACCEPTANCE.md)、[维护与升级](docs/MAINTENANCE.md)、[数据与安全](docs/SECURITY.md) 和 [贡献指南](CONTRIBUTING.md)。本版通过离线故障测试和真实宿主工具调用，不代表完成 7 天私人运行或 20 个代表视频基准。没有与其他插件运行同环境性能/精度对照；不宣称更快、更准或已经证明更有人文。
 
-工程格式依据 DeepSeek 官方 [工具开发](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/basic/tool.zh.md) 和 [插件安装](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/basic/publish.zh.md)。来源整理见 [NOTICE](NOTICE.md)。MIT License。
+2026-10-20 补充真实 API 验收：通过 DSH 官方 stdio JSON-RPC 接口，在 `deepseek-account / deepseek-flash` 真实模型通道完成 3 轮会话、11 次插件工具调用，走通取稿、手账保存、记忆修正与删除、收件箱和状态查询；模型可见工具限制为本插件的 10 个工具。事件回执与本地账本交叉核对通过，没有 B站平台写入。具体视频、手账及完整会话不进入公开仓库；本次也不构成长期稳定性或人文质量基准。
+
+工程格式依据 DeepSeek 官方 [工具开发](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/basic/tool.zh.md)、[插件安装](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/basic/publish.zh.md) 和 [SDK API](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/sdk/README.md)。来源整理见 [NOTICE](NOTICE.md)。MIT License。
