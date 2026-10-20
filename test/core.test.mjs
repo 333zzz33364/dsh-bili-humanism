@@ -8,6 +8,7 @@ import { Service } from "../lib/service.mjs";
 import { Store } from "../lib/store.mjs";
 import { Network, permitted } from "../lib/network.mjs";
 import { bvid, coverage, sign } from "../lib/reader.mjs";
+import { checkTokenBudget } from "../lib/token-gate.mjs";
 const temp = () => mkdtempSync(join(tmpdir(), "bili-humanism-"));
 const bv = "BV1d8pU6xEZX";
 const response = (data) =>
@@ -377,4 +378,30 @@ test("URL part is honored and cached separately from part one", async () => {
   assert.equal(first.cached, false);
   assert.notEqual(second.id, first.id);
   s.close();
+});
+test("host token baseline survives restart; unknown samples are not zero usage", () => {
+  const root = temp();
+  let store = new Store(root);
+  const sample = (n) => ({
+    uncachedInputTokens: n,
+    outputTokens: 0,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+  });
+  assert.equal(checkTokenBudget(store, "session-1", null, 60).used, null);
+  assert.equal(checkTokenBudget(store, "session-1", sample(100), 60).used, 0);
+  assert.equal(checkTokenBudget(store, "session-1", sample(130), 60).used, 30);
+  store.close();
+  store = new Store(root);
+  const exceeded = checkTokenBudget(store, "session-1", sample(161), 60);
+  assert.ok(exceeded.used > exceeded.limit);
+  assert.throws(
+    () => checkTokenBudget(store, "session-1", sample(150), 60),
+    (e) => e.code === "TOKEN_COUNTER_REGRESSED",
+  );
+  assert.throws(
+    () => checkTokenBudget(store, "session-1", null, 60),
+    (e) => e.code === "TOKEN_METER_UNAVAILABLE",
+  );
+  store.close();
 });

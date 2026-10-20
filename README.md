@@ -60,6 +60,7 @@ dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v0.1.0
   config:
     dataDir: /your/private/bili-humanism
     credentialPath: /your/private/credential.json
+    maxSessionTokens: 60000
 ```
 
 SESSDATA 是高敏登录凭据，不是平台颁发的只读 token。插件的只读边界来自固定 GET 接口、精确域名和路径清单、禁止重定向、凭据只向 `api.bilibili.com` 发送；日志不输出原始错误响应或令牌。受信任宿主代码和系统管理员仍能访问本机文件，不能把插件当成宿主整体的沙箱。字幕与标题是不可信数据，不能作为权限或删除记忆的授权。
@@ -74,7 +75,9 @@ bili-humanism resume --acknowledge-account-risk
 
 ## 成本和本地 CLI
 
-每个网络任务最多 12 次请求、3 个候选、90 秒；单个本地 ASR 任务最多 600 秒音频并受总墙钟限制。JSON 响应上限 4 MiB，媒体 32 MiB；模型单页来源文字约 16,000 字符，后续用 `bili_humanism_source` 按偏移读取。宿主整场对话的 token 不能由本插件准确计量或封顶，结果中的 `tokens: null` 表示未知，不能按零消耗解释。
+每个网络任务最多 12 次请求、3 个候选、90 秒；单个本地 ASR 任务最多 600 秒音频并受总墙钟限制。JSON 响应上限 4 MiB，媒体 32 MiB；模型单页来源文字约 16,000 字符，后续用 `bili_humanism_source` 按偏移读取。
+
+若 DSH 提供 provider usage，插件从首次带计量的调用建立持久化会话基线，默认累计增量超过 60,000 tokens 后拒绝继续读取或改写记录。它包括同一宿主会话内的其他工作，不能精确归因给本插件；不能截断已发出的模型请求，单次请求可能越过额度。状态、取消、删除记忆、收件箱和已有来源查看仍可使用。缺计量时显示未知；已有计量突然消失或计数倒退会拒绝继续。CLI 网络任务不调用模型，结果中的 `tokens: null` 表示未取得模型用量，不能按零消耗解释。此接口适配尚未以真实付费模型对话验收。
 
 ```sh
 node bin/cli.mjs read BV1d8pU6xEZX

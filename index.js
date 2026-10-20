@@ -3,11 +3,13 @@ import z from "@deepseek-ai/schemastery";
 import { Service, safeError, readingView } from "./lib/service.mjs";
 import { readFileSync } from "node:fs";
 import { need } from "./lib/errors.mjs";
+import { checkTokenBudget } from "./lib/token-gate.mjs";
 export const name = "bili-humanism";
 export const inject = ["tools"];
 export const Config = z.object({
   dataDir: z.string().default(""),
   credentialPath: z.string().default(""),
+  maxSessionTokens: z.natural().default(60000),
 });
 export function apply(ctx, config = {}) {
   const service = new Service(config);
@@ -27,6 +29,32 @@ export function apply(ctx, config = {}) {
               Object.keys(args).every((k) => Object.hasOwn(parameters, k)),
               "UNKNOWN_PARAMETER",
             );
+            const observational =
+              [
+                "bili_humanism_guide",
+                "bili_humanism_status",
+                "bili_humanism_cancel",
+                "bili_humanism_inbox",
+                "bili_humanism_source",
+              ].includes(name) ||
+              (name === "bili_humanism_memory" &&
+                ["list", "delete"].includes(args.action));
+            if (!observational && exec?.agent?.session) {
+              const session = exec.agent.session;
+              const projection = ctx.get?.("sessionProjections");
+              const state = projection?.stateOf(session, "tokenUsage");
+              const metering = checkTokenBudget(
+                service.store,
+                String(session.id),
+                state?.last ? state.totals : null,
+                config.maxSessionTokens ?? 60000,
+              );
+              need(
+                metering.used === null ||
+                  metering.used <= (config.maxSessionTokens ?? 60000),
+                "TOKEN_BUDGET",
+              );
+            }
             return JSON.stringify(await execute(args, exec), null, 2);
           } catch (e) {
             return JSON.stringify(safeError(e));

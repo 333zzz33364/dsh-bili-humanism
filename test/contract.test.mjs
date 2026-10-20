@@ -44,3 +44,76 @@ test("pinned real DSH defineTool validates every registration and executes guide
   );
   dispose();
 });
+test("host token gate rejects a mutation after the durable session allowance", async () => {
+  const tools = new Map();
+  let dispose;
+  let count = 100;
+  const ctx = {
+    tools: {
+      register(t) {
+        tools.set(t.name, t);
+      },
+    },
+    on(_e, fn) {
+      dispose = fn;
+    },
+    get(name) {
+      assert.equal(name, "sessionProjections");
+      return {
+        stateOf() {
+          return {
+            last: {},
+            totals: {
+              uncachedInputTokens: count,
+              outputTokens: 0,
+              cacheReadTokens: 0,
+              cacheWriteTokens: 0,
+            },
+          };
+        },
+      };
+    },
+  };
+  plugin.apply(ctx, {
+    dataDir: mkdtempSync(join(tmpdir(), "humanism-meter-")),
+    maxSessionTokens: 60,
+  });
+  const memory = tools.get("bili_humanism_memory");
+  const exec = { agent: { session: { id: "metered-session" } } };
+  const body = {
+    subject: "self",
+    understanding: "first",
+    evidence: "local test",
+  };
+  assert.equal(
+    JSON.parse(
+      await memory.execute(
+        { action: "put", id: "self", json: JSON.stringify(body) },
+        exec,
+      ),
+    ).revision,
+    1,
+  );
+  count = 161;
+  assert.equal(
+    JSON.parse(
+      await memory.execute(
+        {
+          action: "put",
+          id: "self",
+          json: JSON.stringify({ ...body, understanding: "should not commit" }),
+        },
+        exec,
+      ),
+    ).error,
+    "TOKEN_BUDGET",
+  );
+  const saved = JSON.parse(await memory.execute({ action: "list" }, exec));
+  assert.equal(saved[0].body.understanding, "first");
+  assert.equal(
+    JSON.parse(await memory.execute({ action: "delete", id: "self" }, exec))
+      .deleted,
+    true,
+  );
+  dispose();
+});
