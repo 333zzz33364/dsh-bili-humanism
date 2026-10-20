@@ -32,7 +32,7 @@ test("pinned real DSH defineTool validates every registration and executes guide
   const injected = JSON.parse(
     await tools
       .get("bili_humanism_read")
-      .execute({ video: "BV1d8pU6xEZX", force: true }, {}),
+      .execute({ video: "BV0000000001", force: true }, {}),
   );
   assert.equal(injected.error, "UNKNOWN_PARAMETER");
   const guide = JSON.parse(

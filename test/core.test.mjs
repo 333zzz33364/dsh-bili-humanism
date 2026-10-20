@@ -10,7 +10,7 @@ import { Network, permitted } from "../lib/network.mjs";
 import { bvid, coverage, sign } from "../lib/reader.mjs";
 import { checkTokenBudget } from "../lib/token-gate.mjs";
 const temp = () => mkdtempSync(join(tmpdir(), "bili-humanism-"));
-const bv = "BV1d8pU6xEZX";
+const bv = "BV0000000001";
 const response = (data) =>
   new Response(JSON.stringify(data), {
     status: 200,

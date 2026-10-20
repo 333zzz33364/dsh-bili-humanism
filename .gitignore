@@ -9,3 +9,9 @@ _auth/
 coverage/
 *.log
 __pycache__/
+cases/
+case-studies/
+examples/
+journals/
+diaries/
+_diary/

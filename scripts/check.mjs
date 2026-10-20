@@ -15,6 +15,17 @@ for (const file of files) {
   }
 }
 const manifest = JSON.parse(readFileSync("package.json", "utf8"));
+for (const file of [
+  ...files,
+  "README.md",
+  "NOTICE.md",
+  "docs/ACCEPTANCE.md",
+  "docs/RELEASE.md",
+]) {
+  const ids = readFileSync(file, "utf8").match(/BV[0-9A-Za-z]{10}/g) || [];
+  if (ids.some((id) => !["BV0000000001", "BVxxxxxxxxxx"].includes(id)))
+    throw new Error("Public source must use synthetic BV fixtures: " + file);
+}
 if (!manifest.dsh?.bundle?.patch) throw new Error("Missing DSH bundle");
 console.log(
   `Syntax checked ${files.length} source/test files; DSH manifest present.`,
