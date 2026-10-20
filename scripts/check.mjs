@@ -19,8 +19,9 @@ for (const file of [
   ...files,
   "README.md",
   "NOTICE.md",
-  "docs/ACCEPTANCE.md",
-  "docs/RELEASE.md",
+  ...readdirSync("docs")
+    .filter((f) => f.endsWith(".md"))
+    .map((f) => "docs/" + f),
 ]) {
   const ids = readFileSync(file, "utf8").match(/BV[0-9A-Za-z]{10}/g) || [];
   if (ids.some((id) => !["BV0000000001", "BVxxxxxxxxxx"].includes(id)))

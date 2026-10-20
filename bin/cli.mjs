@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
 import { Service, safeError } from "../lib/service.mjs";
+import { resolveUnknown, resumeWrites } from "../lib/writer.mjs";
 const [command = "help", ...args] = process.argv.slice(2);
 const config = {
   dataDir: process.env.BILI_HUMANISM_HOME,
@@ -8,9 +9,14 @@ const config = {
 };
 let service;
 try {
+  if (process.env.BILI_HUMANISM_CONFIG_FILE)
+    Object.assign(
+      config,
+      JSON.parse(readFileSync(process.env.BILI_HUMANISM_CONFIG_FILE, "utf8")),
+    );
   if (command === "help")
     console.log(
-      "bili-humanism read BV [part] | candidates [1-3] | status | cancel ID | inbox | journal READING_ID note.json | import READING_ID segments.json | memory list/put/delete [ID] [json-file] | resume --acknowledge-account-risk\nConfigure local paths using BILI_HUMANISM_HOME / BILI_HUMANISM_CREDENTIAL_FILE. Never put credential values in command arguments.",
+      "bili-humanism read BV [part] | candidates [1-3] | status | cancel ID | inbox | journal READING_ID note.json | import READING_ID segments.json | memory list/put/delete [ID] [json-file] | consumed READING_ID SECONDS --acknowledge-actual-consumption | history READING_ID CONSUMPTION_ID | favorite READING_ID FOLDER_ID add/remove | write-resolve OPERATION_ID applied/not-applied --acknowledge-unknown-result | write-resume --acknowledge-account-risk | resume --acknowledge-account-risk\nConfigure trusted local paths using BILI_HUMANISM_HOME / BILI_HUMANISM_CREDENTIAL_FILE / BILI_HUMANISM_CONFIG_FILE. Never put credential values in command arguments.",
     );
   else {
     service = new Service(config);
@@ -22,8 +28,31 @@ try {
       );
     else if (command === "candidates")
       result = await service.candidates(Number(args[0] || 3));
-    else if (command === "status") result = service.store.status();
-    else if (command === "cancel") {
+    else if (command === "status") result = service.status();
+    else if (command === "consumed") {
+      if (args[2] !== "--acknowledge-actual-consumption")
+        throw new Error("Missing explicit consumption acknowledgement");
+      result = service.confirmConsumption(args[0], Number(args[1]));
+    } else if (command === "history")
+      result = await service.platformWrite("history", {
+        readingId: args[0],
+        consumptionId: args[1],
+      });
+    else if (command === "favorite")
+      result = await service.platformWrite("favorites", {
+        readingId: args[0],
+        folderId: args[1],
+        action: args[2],
+      });
+    else if (command === "write-resolve") {
+      if (args[2] !== "--acknowledge-unknown-result")
+        throw new Error("Missing explicit unknown-result acknowledgement");
+      result = resolveUnknown(config, args[0], args[1]);
+    } else if (command === "write-resume") {
+      if (args[0] !== "--acknowledge-account-risk")
+        throw new Error("Missing explicit risk acknowledgement");
+      result = resumeWrites(config);
+    } else if (command === "cancel") {
       service.store.cancel(args[0]);
       result = { cancelRequested: true };
     } else if (command === "inbox")

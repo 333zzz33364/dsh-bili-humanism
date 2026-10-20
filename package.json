@@ -1,7 +1,7 @@
 {
   "name": "dsh-bili-humanism",
-  "version": "0.1.0",
-  "description": "在人的创作与生活中学习理解人：B站只读取稿、证据手账与本地收件箱",
+  "version": "1.1.0",
+  "description": "B站分层取稿、可修正记忆与人类授权的历史和收藏写入：可安装的 DSH 插件",
   "type": "module",
   "main": "index.js",
   "exports": {

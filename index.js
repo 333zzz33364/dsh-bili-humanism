@@ -10,6 +10,10 @@ export const Config = z.object({
   dataDir: z.string().default(""),
   credentialPath: z.string().default(""),
   maxSessionTokens: z.natural().default(60000),
+  enableHistoryWrites: z.boolean().default(false),
+  enableFavoriteWrites: z.boolean().default(false),
+  writePolicyPath: z.string().default(""),
+  accountStateDir: z.string().default(""),
 });
 export function apply(ctx, config = {}) {
   const service = new Service(config);
@@ -111,7 +115,7 @@ export function apply(ctx, config = {}) {
     "bili_humanism_status",
     "Inspect persistent pause, task usage, reading IDs and local-only boundaries.",
     {},
-    () => service.store.status(),
+    () => service.status(),
   );
   register(
     "bili_humanism_cancel",
@@ -168,5 +172,28 @@ export function apply(ctx, config = {}) {
     },
     (a) => service.importLocal(a.readingId, JSON.parse(a.json)),
   );
+  if (config.enableHistoryWrites === true)
+    register(
+      "bili_humanism_history",
+      "Write actual consumption progress under a human-configured account grant. Requires a local human-confirmed consumption receipt; reading source text does not prove playback. Never retry an unknown result.",
+      {
+        readingId: str("Existing reading ID"),
+        consumptionId: str(
+          "Receipt ID created by the trusted local consumed command",
+        ),
+      },
+      (a, e) => service.platformWrite("history", a, e?.signal),
+    );
+  if (config.enableFavoriteWrites === true)
+    register(
+      "bili_humanism_favorite",
+      "Add a reading to a human-approved favorites folder. Removal requires a separate folder grant. Verify account, visibility, quota and receipt; stop on unknown result.",
+      {
+        readingId: str("Existing reading ID"),
+        folderId: str("Approved numeric folder ID"),
+        action: { type: "string", enum: ["add", "remove"], required: true },
+      },
+      (a, e) => service.platformWrite("favorites", a, e?.signal),
+    );
   ctx.on("dispose", () => service.close());
 }
