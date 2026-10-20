@@ -12,7 +12,7 @@
 
 ## 启用与引用
 
-在可信插件 config 中设置 `enablePersonalityLearning: true` 并重载，才注册 bili_humanism_personality。默认关闭，不自动更改已有主指令文件，也不创建每日后台任务。
+人格积累默认开启：省略 `enablePersonalityLearning` 时会注册 bili_humanism_personality，DSH 与本地 CLI 使用相同默认值。可在可信插件 config 中显式设置 `enablePersonalityLearning: false` 并重载，以隐藏模型工具并停止新摘句写入；已有记录保留，本人仍可在本地查看、修订或撤回。B站四项写入开关仍各自默认关闭。插件不自动更改已有主指令文件，也不创建每日后台任务。
 
 本人可用本地 CLI 给明确指定的主文件安装固定引用，保留其余内容；重复执行不会重复追加：
 

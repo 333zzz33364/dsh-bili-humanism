@@ -155,10 +155,10 @@ const rejects = (promise, code) =>
 
 test("write switches register only selected capabilities and have no default traffic", async () => {
   for (const [history, favorites, expected] of [
-    [false, false, 10],
-    [true, false, 11],
-    [false, true, 11],
-    [true, true, 12],
+    [false, false, 11],
+    [true, false, 12],
+    [false, true, 12],
+    [true, true, 13],
   ]) {
     const f = fixture(),
       tools = new Map();
@@ -184,7 +184,7 @@ test("write switches register only selected capabilities and have no default tra
     const status = JSON.parse(
       await tools.get("bili_humanism_status").execute({}, {}),
     );
-    assert.equal(status.platformWriteTools.length, expected - 10);
+    assert.equal(status.platformWriteTools.length, expected - 11);
     assert.equal(f.calls.length, 0);
     dispose();
     f.service.close();
@@ -584,7 +584,7 @@ test("all sixteen independent switch combinations register correctly and never e
       },
       config,
     );
-    const expected = 10 + mask.toString(2).replaceAll("0", "").length;
+    const expected = 11 + mask.toString(2).replaceAll("0", "").length;
     assert.equal(tools.size, expected);
     assert.ok(
       ![...tools.keys()].some((n) =>
@@ -594,7 +594,7 @@ test("all sixteen independent switch combinations register correctly and never e
     const status = JSON.parse(
       await tools.get("bili_humanism_status").execute({}, {}),
     );
-    assert.equal(status.platformWriteTools.length, expected - 10);
+    assert.equal(status.platformWriteTools.length, expected - 11);
     for (const key of ["like", "coin"]) {
       if (!tools.has("bili_humanism_" + key)) continue;
       const result = JSON.parse(

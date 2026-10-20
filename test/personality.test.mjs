@@ -18,10 +18,10 @@ import {
   linkPersonality,
 } from "../lib/personality.mjs";
 
-function fixture() {
+function fixture(config = {}) {
   const root = mkdtempSync(join(tmpdir(), "humanism-personality-"));
   const service = new Service(
-    { dataDir: root, enablePersonalityLearning: true },
+    { dataDir: root, ...config },
     {
       fetcher: () =>
         assert.fail("Local personality learning must not request network"),
@@ -55,7 +55,7 @@ function fixture() {
   return { root, service, note, path: join(root, "human-world.md") };
 }
 
-test("dedicated personality tool is opt-in, blocks arbitrary paths and exposes no main-instruction editor", async () => {
+test("dedicated personality tool defaults on, blocks arbitrary paths and exposes no main-instruction editor", async () => {
   const f = fixture(),
     tools = new Map();
   let dispose;
@@ -70,7 +70,7 @@ test("dedicated personality tool is opt-in, blocks arbitrary paths and exposes n
         dispose = fn;
       },
     },
-    { dataDir: f.root, enablePersonalityLearning: true },
+    { dataDir: f.root },
   );
   assert.equal(tools.size, 11);
   const tool = tools.get("bili_humanism_personality");
@@ -90,6 +90,45 @@ test("dedicated personality tool is opt-in, blocks arbitrary paths and exposes n
   );
   dispose();
   f.service.close();
+});
+
+test("explicitly disabled personality learning removes the tool and rejects selection without changing prior records", () => {
+  const f = fixture(),
+    choice = f.note(),
+    tools = new Map();
+  f.service.personality("select", choice);
+  const before = readFileSync(f.path, "utf8");
+  f.service.close();
+  const disabled = new Service({
+    dataDir: f.root,
+    enablePersonalityLearning: false,
+  });
+  assert.throws(
+    () => disabled.personality("select", choice),
+    (e) => e.code === "PERSONALITY_LEARNING_DISABLED",
+  );
+  assert.equal(disabled.personality("read").total, 1);
+  assert.equal(readFileSync(f.path, "utf8"), before);
+  let dispose;
+  apply(
+    {
+      tools: {
+        register(t) {
+          tools.set(t.name, t);
+        },
+      },
+      on(_event, fn) {
+        dispose = fn;
+      },
+    },
+    { dataDir: f.root, enablePersonalityLearning: false },
+  );
+  assert.equal(tools.size, 10);
+  assert.equal(tools.has("bili_humanism_personality"), false);
+  for (const name of ["history", "favorite", "like", "coin", "comment"])
+    assert.equal(tools.has("bili_humanism_" + name), false);
+  dispose();
+  disabled.close();
 });
 
 test("daily reflection writes only the dedicated Markdown and retains provenance and source-day timezone", () => {

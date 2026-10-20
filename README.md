@@ -8,7 +8,7 @@
 
 这是可安装的 DeepSeek Harness 插件。它读取 B站视频的文字来源，保留作者、链接、分 P、时间点与未覆盖部分，再由宿主模型写成可以追问、修正的私人手账。艺术、日常、游戏、音乐和没有实用产出的观看都可以成为遇见；允许没有推荐、没有新发现。
 
-**1.3.0 是预览版。** 新增每日信笺摘句与专用人格 Markdown，主指令文件只保留固定读取入口。人格积累需开启 enablePersonalityLearning；历史、收藏、点赞与投币四个开关继续独立、默认关闭；只有开启对应开关才注册写入工具。评论入口暂不开放，私信、动态、关注和投稿也未实现；没有后台定时任务。本地收件箱仍是文件与 DSH 工具，没有独立侧栏或设置页。
+**1.3.1 是预览版。** 每日信笺摘句与专用人格 Markdown 默认启用，主指令文件只保留固定读取入口。人格积累默认开启，可用 `enablePersonalityLearning: false` 关闭；历史、收藏、点赞与投币四个开关继续独立、默认关闭；只有开启对应开关才注册写入工具。评论入口暂不开放，私信、动态、关注和投稿也未实现；没有后台定时任务。本地收件箱仍是文件与 DSH 工具，没有独立侧栏或设置页。
 
 历史、收藏、点赞与投币执行器已实现账号核对、范围授权、额度、重复检查、回读核验与结果不明时暂停。**离线接口测试和真实 DSH 安装验收不等于真实 B站写入实测；本版本未对真实账号发送写入请求。** 是否开启、使用哪个账号和收藏夹，由使用者自己判断并通过可信配置授权，可随时撤销。公开表达继续作为独立路线，须绑定具体目标和完整正文。
 
@@ -46,7 +46,7 @@ flowchart TB
 
 可手动接入使用者拥有或获准管理的现有 agent 账号。使用者先停用原 agent 的写入与调度，再配置本地凭据、账号 UID、有效期和权限。插件核对实际登录账号，不会自动停止外部程序或迁移其资料。账号、凭据、历史和收藏清单都留在本地。开关和独立授权文件缺一不可，步骤见[写入配置](docs/WRITE_CONFIG.md)。
 
-| 权限 / 开关                   | 1.3.0 行为                              | 授权范围与约束                                                                       |
+| 权限 / 开关                   | 1.3.1 行为                              | 授权范围与约束                                                                       |
 | ----------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------ |
 | 历史 / `enableHistoryWrites`  | 用本地人类确认的消费回执同步分 P 和进度 | 默认关闭，绑定账号、目标范围、期限和额度；模型不能生成消费回执，取稿不能冒充完整播放 |
 | 收藏 / `enableFavoriteWrites` | 将内容加入指定收藏夹                    | 默认关闭，限定收藏夹、目标范围与可见性；移除另需该收藏夹的 `allowRemove` 授权        |
@@ -72,12 +72,12 @@ flowchart TB
 
 ## 安装与开始
 
-需要 Node.js 24+、DSH `0.2.1-rc.2`。1.3.0 已在 Windows 桌面内置 CLI 隔离安装 tarball，并验收 16 种平台开关组合（默认 10 个，全部开启 14 个工具）与无授权拒绝；50 项离线测试通过。v0.1.0 另通过 SDK JSON-RPC 真实 Agent 会话；桌面界面安装、独立 npm CLI 和其他版本尚未完成验收。
+需要 Node.js 24+、DSH `0.2.1-rc.2`。1.3.1 已在 Windows 桌面内置 CLI 隔离安装 tarball，并验收 16 种平台开关组合（默认 11 个，显式关闭人格积累为 10 个，连同四项平台开关全部开启为 15 个工具）与无授权拒绝；51 项离线测试通过。v0.1.0 另通过 SDK JSON-RPC 真实 Agent 会话；桌面界面安装、独立 npm CLI 和其他版本尚未完成验收。
 
-从 [Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 下载 `dsh-bili-humanism-1.3.0.tgz` 后：
+从 [Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 下载 `dsh-bili-humanism-1.3.1.tgz` 后：
 
 ```sh
-dsh plugin --profile web add ./dsh-bili-humanism-1.3.0.tgz
+dsh plugin --profile web add ./dsh-bili-humanism-1.3.1.tgz
 dsh --profile web --dump-config
 dsh --profile web
 ```
@@ -85,7 +85,7 @@ dsh --profile web
 桌面版请在内置插件管理器安装同一包并重新加载；该界面安装路径尚未实测。也可将下面的 GitHub 固定标签地址交给 `dsh plugin add`：
 
 ```sh
-dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.3.0
+dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.3.1
 ```
 
 发布入口是现成的 JavaScript，没有安装构建脚本。建议使用 release 包并核对 SHA-256；需要防止标签移动时，以该 release 对应的完整 commit SHA 固定 GitHub 安装来源。
@@ -98,7 +98,7 @@ dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.3.0
 
 ## 已实现与限制
 
-| 路线 / 能力         | 1.3.0 状态                                                                                     |
+| 路线 / 能力         | 1.3.1 状态                                                                                     |
 | ------------------- | ---------------------------------------------------------------------------------------------- |
 | A2 官方 AI 文字来源 | 已实现并做过真实接口功能检查；需要本机登录凭据。摘要/提纲不能冒充逐字稿                        |
 | A1 字幕轨           | 已实现并做过真实接口功能检查；匿名读取可能没有字幕                                             |
@@ -109,7 +109,7 @@ dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.3.0
 | 任务控制            | SQLite 事务、任务互斥、缓存、结构化去重、取消、进程退出恢复、持久暂停                          |
 | 历史 / 收藏写入     | 开关与执行器已实现，离线接口测试覆盖，未做真实账号写入；手动接入现有账号，无自动迁移或接管界面 |
 | 点赞 / 投币         | 独立开关、状态回读与预算已实现，离线测试覆盖；真实账号写入未实测                               |
-| 人格成长            | 专用 human-world.md、按信笺日期选句、分页、来源追踪与可信本地修订/撤回；独立开关默认关闭       |
+| 人格成长            | 专用 human-world.md、按信笺日期选句、分页、来源追踪与可信本地修订/撤回；默认开启，可显式关闭       |
 | 评论 / 其他表达     | 评论、私信、动态、关注、投稿未实现，不由四项写入权限放行                                       |
 | 定时 / 私人通知     | 无后台定时任务；交付在本地收件箱，尚无外部私人通知适配器                                       |
 
@@ -128,7 +128,7 @@ dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.3.0
     dataDir: /your/private/bili-humanism
     credentialPath: /your/private/credential.json
     maxSessionTokens: 60000
-    enablePersonalityLearning: false
+    enablePersonalityLearning: true
     enableHistoryWrites: false
     enableFavoriteWrites: false
     enableLikeWrites: false
