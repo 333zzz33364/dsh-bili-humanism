@@ -16,7 +16,7 @@ try {
     );
   if (command === "help")
     console.log(
-      "bili-humanism read BV [part] | candidates [1-3] | status | cancel ID | inbox | journal READING_ID note.json | import READING_ID segments.json | memory list/put/delete [ID] [json-file] | consumed READING_ID SECONDS --acknowledge-actual-consumption | history READING_ID CONSUMPTION_ID | favorite READING_ID FOLDER_ID add/remove | write-resolve OPERATION_ID applied/not-applied --acknowledge-unknown-result | write-resume --acknowledge-account-risk | resume --acknowledge-account-risk\nConfigure trusted local paths using BILI_HUMANISM_HOME / BILI_HUMANISM_CREDENTIAL_FILE / BILI_HUMANISM_CONFIG_FILE. Never put credential values in command arguments.",
+      "bili-humanism read BV [part] | candidates [1-3] | status | cancel ID | inbox | journal READING_ID note.json | import READING_ID segments.json | memory list/put/delete [ID] [json-file] | consumed READING_ID SECONDS --acknowledge-actual-consumption | history READING_ID CONSUMPTION_ID | favorite READING_ID FOLDER_ID add/remove | like READING_ID | coin READING_ID [TARGET_TOTAL] | write-resolve OPERATION_ID applied/not-applied --acknowledge-unknown-result | write-resume --acknowledge-account-risk | resume --acknowledge-account-risk\nConfigure trusted local paths using BILI_HUMANISM_HOME / BILI_HUMANISM_CREDENTIAL_FILE / BILI_HUMANISM_CONFIG_FILE. Never put credential values in command arguments.",
     );
   else {
     service = new Service(config);
@@ -43,6 +43,13 @@ try {
         readingId: args[0],
         folderId: args[1],
         action: args[2],
+      });
+    else if (command === "like")
+      result = await service.platformWrite("likes", { readingId: args[0] });
+    else if (command === "coin")
+      result = await service.platformWrite("coins", {
+        readingId: args[0],
+        ...(args[1] === undefined ? {} : { totalCoins: Number(args[1]) }),
       });
     else if (command === "write-resolve") {
       if (args[2] !== "--acknowledge-unknown-result")

@@ -1,7 +1,7 @@
 {
   "name": "dsh-bili-humanism",
-  "version": "1.1.0",
-  "description": "B站分层取稿、可修正记忆与人类授权的历史和收藏写入：可安装的 DSH 插件",
+  "version": "1.2.0",
+  "description": "B站内容学习与可修正记忆：人类开关授权历史、收藏、点赞和投币，评论暂不开放",
   "type": "module",
   "main": "index.js",
   "exports": {

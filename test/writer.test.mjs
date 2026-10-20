@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { Service } from "../lib/service.mjs";
 import { accountStore, resolveUnknown, resumeWrites } from "../lib/writer.mjs";
 import { apply } from "../index.js";
+import { Network } from "../lib/network.mjs";
 
 const bv = "BV0000000001";
 const response = (data) =>
@@ -21,10 +22,16 @@ function fixture() {
     accountStateDir: join(root, "accounts"),
     enableHistoryWrites: true,
     enableFavoriteWrites: true,
+    enableLikeWrites: false,
+    enableCoinWrites: false,
   };
   writeFileSync(
     config.credentialPath,
-    JSON.stringify({ sessdata: "synthetic-session", bili_jct: "a".repeat(32) }),
+    JSON.stringify({
+      sessdata: "synthetic-session",
+      bili_jct: "a".repeat(32),
+      buvid3: "synthetic-existing-device",
+    }),
   );
   const policy = {
     version: 1,
@@ -35,6 +42,8 @@ function fixture() {
     expiresAt: new Date(Date.now() + 3600000).toISOString(),
     videos: [bv],
     history: { enabled: true, maxWrites: 3 },
+    likes: { enabled: true, maxWrites: 3 },
+    coins: { enabled: true, maxWrites: 3, maxCoins: 2, maxPerVideo: 2 },
     favorites: {
       enabled: true,
       maxWrites: 3,
@@ -46,7 +55,9 @@ function fixture() {
   save();
   const calls = [];
   let favorite = false,
-    progress = 0;
+    progress = 0,
+    liked = false,
+    coins = 0;
   const hooks = {};
   const fetcher = async (u, options) => {
     const url = new URL(u);
@@ -75,6 +86,10 @@ function fixture() {
       return response({
         list: progress ? [{ history: { oid: 99, cid: 7 }, progress }] : [],
       });
+    if (url.pathname.endsWith("/has/like"))
+      return response(hooks.likeState ?? (liked ? 1 : 0));
+    if (url.pathname.endsWith("/archive/coins"))
+      return response({ multiply: hooks.coinState ?? coins });
     assert.equal(options.method, "POST");
     assert.equal(options.redirect, "manual");
     assert.ok(options.headers.Cookie.includes("bili_jct="));
@@ -84,7 +99,13 @@ function fixture() {
       favorite = body.get("add_media_ids") === "456";
     else if (url.pathname.endsWith("/report"))
       progress = Number(body.get("progress"));
-    else assert.fail("Unexpected route");
+    else if (url.pathname.endsWith("/archive/like")) {
+      assert.equal(body.get("like"), "1");
+      liked = true;
+    } else if (url.pathname.endsWith("/coin/add")) {
+      assert.equal(body.get("select_like"), "0");
+      coins += Number(body.get("multiply"));
+    } else assert.fail("Unexpected route");
     if (hooks.post) return hooks.post(url, options);
     return response({});
   };
@@ -527,5 +548,293 @@ test("writer rejects model-supplied force or paths and obeys request budget", as
     "REQUESTS_BUDGET",
   );
   assert.equal(f.posts.length, 0);
+  f.service.close();
+});
+
+function interaction(kind) {
+  const f = fixture();
+  const key = kind === "likes" ? "enableLikeWrites" : "enableCoinWrites";
+  f.config[key] = f.service.config[key] = true;
+  f.args = { readingId: f.reading.id };
+  return f;
+}
+
+test("all sixteen independent switch combinations register correctly and never expose comments", async () => {
+  for (let mask = 0; mask < 16; mask++) {
+    const f = fixture(),
+      tools = new Map();
+    let dispose;
+    const config = { ...f.config };
+    [
+      "enableHistoryWrites",
+      "enableFavoriteWrites",
+      "enableLikeWrites",
+      "enableCoinWrites",
+    ].forEach((key, bit) => (config[key] = !!(mask & (1 << bit))));
+    apply(
+      {
+        tools: {
+          register(t) {
+            tools.set(t.name, t);
+          },
+        },
+        on(_e, fn) {
+          dispose = fn;
+        },
+      },
+      config,
+    );
+    const expected = 10 + mask.toString(2).replaceAll("0", "").length;
+    assert.equal(tools.size, expected);
+    assert.ok(
+      ![...tools.keys()].some((n) =>
+        /comment|reply|publish|resume|consumed/.test(n),
+      ),
+    );
+    const status = JSON.parse(
+      await tools.get("bili_humanism_status").execute({}, {}),
+    );
+    assert.equal(status.platformWriteTools.length, expected - 10);
+    for (const key of ["like", "coin"]) {
+      if (!tools.has("bili_humanism_" + key)) continue;
+      const result = JSON.parse(
+        await tools
+          .get("bili_humanism_" + key)
+          .execute({ readingId: f.reading.id, force: true }, {}),
+      );
+      assert.equal(result.error, "UNKNOWN_PARAMETER");
+    }
+    assert.equal(f.calls.length, 0);
+    dispose();
+    f.service.close();
+  }
+});
+
+test("like and coin switches, scoped grants and original device cookie are required independently", async () => {
+  for (const kind of ["likes", "coins"]) {
+    for (const mode of ["switch", "grant", "device", "expired"]) {
+      const f = interaction(kind);
+      if (mode === "switch")
+        f.service.config[
+          kind === "likes" ? "enableLikeWrites" : "enableCoinWrites"
+        ] = false;
+      if (mode === "grant") f.policy[kind].enabled = false;
+      if (mode === "expired") f.policy.expiresAt = "2000-01-01T00:00:00Z";
+      if (mode === "device")
+        writeFileSync(
+          f.config.credentialPath,
+          JSON.stringify({
+            sessdata: "synthetic-session",
+            bili_jct: "a".repeat(32),
+          }),
+        );
+      f.save();
+      await assert.rejects(f.service.platformWrite(kind, f.args));
+      assert.equal(f.calls.length, 0);
+      f.service.close();
+    }
+  }
+});
+
+test("likes are add-only and durable dedupe survives stale recent-like API and a new profile", async () => {
+  const f = interaction("likes");
+  assert.equal(
+    (await f.service.platformWrite("likes", f.args)).result.status,
+    "verified",
+  );
+  assert.equal(f.posts.length, 1);
+  assert.ok(
+    f.posts[0].options.headers.Cookie.includes(
+      "buvid3=synthetic-existing-device",
+    ),
+  );
+  f.hooks.likeState = 0;
+  const other = new Service(
+    { ...f.config, dataDir: join(f.config.dataDir, "other") },
+    { fetcher: f.service.fetcher },
+  );
+  const id = other.store.saveReading({ ...f.reading }).id;
+  assert.equal(
+    (await other.platformWrite("likes", { readingId: id })).result.status,
+    "already_recorded",
+  );
+  await rejects(
+    f.service.platformWrite("likes", { ...f.args, action: "remove" }),
+    "UNKNOWN_PARAMETER",
+  );
+  assert.equal(f.posts.length, 1);
+  other.close();
+  f.service.close();
+});
+
+test("coin targets are cumulative and idempotent, only spending the missing amount without a bundled like", async () => {
+  const f = interaction("coins");
+  assert.equal(
+    (await f.service.platformWrite("coins", f.args)).result.status,
+    "verified",
+  );
+  assert.equal(
+    (await f.service.platformWrite("coins", f.args)).result.status,
+    "already_recorded",
+  );
+  f.cool();
+  assert.equal(
+    (await f.service.platformWrite("coins", { ...f.args, totalCoins: 2 }))
+      .result.status,
+    "verified",
+  );
+  assert.equal(
+    (await f.service.platformWrite("coins", { ...f.args, totalCoins: 2 }))
+      .result.status,
+    "already_recorded",
+  );
+  assert.equal(f.posts.length, 2);
+  assert.deepEqual(
+    f.posts.map((p) => new URLSearchParams(p.options.body).get("multiply")),
+    ["1", "1"],
+  );
+  assert.ok(
+    f.posts.every(
+      (p) => new URLSearchParams(p.options.body).get("select_like") === "0",
+    ),
+  );
+  assert.ok(
+    f.posts.every((p) => p.url.pathname === "/x/web-interface/coin/add"),
+  );
+  assert.equal(
+    f.state((db) => db.getControl("coin-budget:synthetic-grant")),
+    2,
+  );
+  f.service.close();
+});
+
+test("coin per-video and cumulative budget bounds reject excess before sending", async () => {
+  for (const mode of ["amount", "per-video", "budget", "invalid-policy"]) {
+    const f = interaction("coins");
+    let args = f.args;
+    if (mode === "amount") args = { ...args, totalCoins: 3 };
+    if (mode === "per-video") {
+      f.policy.coins.maxPerVideo = 1;
+      args = { ...args, totalCoins: 2 };
+    }
+    if (mode === "budget")
+      f.state((db) => db.setControl("coin-budget:synthetic-grant", 2));
+    if (mode === "invalid-policy") f.policy.coins.maxCoins = 0;
+    f.save();
+    await assert.rejects(f.service.platformWrite("coins", args));
+    assert.equal(f.posts.length, 0);
+    f.service.close();
+  }
+});
+
+test("like and coin revocation in preflight, wrong accounts and changed device cookies never send", async () => {
+  for (const kind of ["likes", "coins"]) {
+    for (const mode of ["revoke", "account", "device"]) {
+      const f = interaction(kind);
+      if (mode === "account") {
+        f.policy.accountId = "124";
+        f.save();
+      } else
+        f.hooks.before = (url) => {
+          if (
+            !url.pathname.endsWith(
+              kind === "likes" ? "/has/like" : "/archive/coins",
+            )
+          )
+            return;
+          if (mode === "revoke") {
+            f.policy[kind].enabled = false;
+            f.save();
+          } else
+            writeFileSync(
+              f.config.credentialPath,
+              JSON.stringify({
+                sessdata: "synthetic-session",
+                bili_jct: "a".repeat(32),
+                buvid3: "different-device",
+              }),
+            );
+        };
+      await assert.rejects(f.service.platformWrite(kind, f.args));
+      assert.equal(f.posts.length, 0);
+      f.service.close();
+    }
+  }
+});
+
+test("unknown coin outcome reserves spend, never retries and human resolution records the target", async () => {
+  const f = interaction("coins");
+  f.hooks.post = () => {
+    throw new Error("synthetic timeout");
+  };
+  await rejects(
+    f.service.platformWrite("coins", f.args),
+    "WRITE_RESULT_UNKNOWN",
+  );
+  assert.equal(f.posts.length, 1);
+  assert.equal(
+    f.state((db) => db.getControl("coin-budget:synthetic-grant")),
+    1,
+  );
+  await rejects(f.service.platformWrite("coins", f.args), "PERSISTENT_PAUSE");
+  const pending = f.state((db) => db.getControl("write:pending"));
+  assert.equal(pending.coins, 1);
+  assert.equal(pending.targetCoins, 1);
+  resolveUnknown(f.config, pending.id, "applied");
+  assert.equal(
+    f.state((db) => db.getControl("coins:" + bv)),
+    1,
+  );
+  assert.ok(f.state((db) => db.getControl("pause")));
+  assert.equal(f.posts.length, 1);
+  f.service.close();
+});
+
+test("like and coin remote receipt mismatches persist pause instead of claiming success", async () => {
+  for (const kind of ["likes", "coins"]) {
+    const f = interaction(kind);
+    f.hooks.post = () => {
+      if (kind === "likes") f.hooks.likeState = 0;
+      else f.hooks.coinState = 0;
+      return response({});
+    };
+    await rejects(
+      f.service.platformWrite(kind, f.args),
+      "WRITE_RESULT_UNKNOWN",
+    );
+    assert.ok(f.state((db) => db.getControl("write:pending")));
+    assert.equal(f.posts.length, 1);
+    f.service.close();
+  }
+});
+
+test("comments are rejected by service and transport even when every allowed switch is open", async () => {
+  const f = interaction("likes");
+  f.service.config.enableCoinWrites = true;
+  await rejects(
+    f.service.platformWrite("comments", {
+      readingId: f.reading.id,
+      text: "synthetic text",
+    }),
+    "WRITE_SCOPE_DENIED",
+  );
+  const network = new Network(
+    f.service.store,
+    {
+      spend() {},
+      remaining() {
+        return 1000;
+      },
+    },
+    { fetcher: f.service.fetcher },
+  );
+  network.beforePost = () => assert.fail("Comment must fail before dispatch");
+  await rejects(
+    network.request(new URL("https://api.bilibili.com/x/v2/reply/add"), "api", {
+      method: "POST",
+    }),
+    "URL_DENIED",
+  );
+  assert.equal(f.calls.length, 0);
   f.service.close();
 });

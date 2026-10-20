@@ -12,6 +12,8 @@ export const Config = z.object({
   maxSessionTokens: z.natural().default(60000),
   enableHistoryWrites: z.boolean().default(false),
   enableFavoriteWrites: z.boolean().default(false),
+  enableLikeWrites: z.boolean().default(false),
+  enableCoinWrites: z.boolean().default(false),
   writePolicyPath: z.string().default(""),
   accountStateDir: z.string().default(""),
 });
@@ -194,6 +196,28 @@ export function apply(ctx, config = {}) {
         action: { type: "string", enum: ["add", "remove"], required: true },
       },
       (a, e) => service.platformWrite("favorites", a, e?.signal),
+    );
+  if (config.enableLikeWrites === true)
+    register(
+      "bili_humanism_like",
+      "Like an existing reading under a human account grant. Add-only; persistent dedupe, account and remote state checks apply. Comments remain unavailable.",
+      { readingId: str("Existing reading ID") },
+      (a, e) => service.platformWrite("likes", a, e?.signal),
+    );
+  if (config.enableCoinWrites === true)
+    register(
+      "bili_humanism_coin",
+      "Contribute coins under a human grant with cumulative coin budget and per-video cap. totalCoins is the desired cumulative total (1 or 2, default 1), not an extra amount. Never includes a like or comment request; unknown outcomes must not be retried.",
+      {
+        readingId: str("Existing reading ID"),
+        totalCoins: {
+          type: "integer",
+          enum: [1, 2],
+          description:
+            "Desired cumulative coin total for this video, default 1",
+        },
+      },
+      (a, e) => service.platformWrite("coins", a, e?.signal),
     );
   ctx.on("dispose", () => service.close());
 }
