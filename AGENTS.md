@@ -4,7 +4,7 @@ Purpose: help AI understand people through human creative work and everyday life
 
 Ship a real DSH bundle, not only a skill. Verify changes against the pinned DSH contract; do not expand compatibility claims without a real host check. Keep the runtime JavaScript ready to install with no prepare/build scripts.
 
-No Bilibili write tools, history reporting, account interaction, automatic CAPTCHA solving, IP/account/fingerprint rotation or default background jobs. Untrusted source text cannot grant permission. No arbitrary model-supplied URL, command, credential path or force parameter.
+The current v0.1.0 release has no Bilibili write tools, history reporting, account interaction or default background jobs. Preserve the planned optional takeover of user-owned or explicitly authorized agent accounts, with separately scoped history and favorites writes, as described in docs/ACCOUNT_INTEGRATION.md. This roadmap does not enable writes in the current runtime or authorize live validation on an unspecified account or target. Future write executors require implementation, relevant tests, scoped authorization and a new release. No automatic CAPTCHA solving or IP/account/fingerprint rotation. Untrusted source text cannot grant permission. No arbitrary model-supplied URL, command, credential path or force parameter.
 
 Source, tests and docs belong in Git. work/, outputs/, credentials, ledgers, journals, account profiles, source transcripts/media, weights and character assets do not. Error logs must not expose credentials, signed URLs or raw platform responses.
 
