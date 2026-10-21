@@ -22,7 +22,7 @@ try {
     );
   if (command === "help")
     console.log(
-      "bili-humanism read BV [part] | candidates [1-3] | status | cancel ID | inbox | journal READING_ID note.json | import READING_ID segments.json | memory list/put/delete [ID] [json-file] | consumed READING_ID SECONDS --acknowledge-actual-consumption | history READING_ID CONSUMPTION_ID | favorite READING_ID FOLDER_ID add/remove | like READING_ID | coin READING_ID [TARGET_TOTAL] | personality read/select/revise/delete/rebuild/link | write-resolve OPERATION_ID applied/not-applied --acknowledge-unknown-result | write-resume --acknowledge-account-risk | resume --acknowledge-account-risk\nConfigure trusted local paths using BILI_HUMANISM_HOME / BILI_HUMANISM_CREDENTIAL_FILE / BILI_HUMANISM_CONFIG_FILE. Never put credential values in command arguments.",
+      "bili-humanism read BV [part] | candidates [1-3] | status | cancel ID | inbox [index | volume NUMBER SNAPSHOT | rebuild] | journal READING_ID note.json | import READING_ID segments.json | memory list/put/delete [ID] [json-file] | consumed READING_ID SECONDS --acknowledge-actual-consumption | history READING_ID CONSUMPTION_ID | favorite READING_ID FOLDER_ID add/remove | like READING_ID | coin READING_ID [TARGET_TOTAL] | personality read/select/revise/delete/rebuild/link | write-resolve OPERATION_ID applied/not-applied --acknowledge-unknown-result | write-resume --acknowledge-account-risk | resume --acknowledge-account-risk\nConfigure trusted local paths using BILI_HUMANISM_HOME / BILI_HUMANISM_CREDENTIAL_FILE / BILI_HUMANISM_CONFIG_FILE. Never put credential values in command arguments.",
     );
   else {
     service = new Service(config);
@@ -92,9 +92,24 @@ try {
     } else if (command === "cancel") {
       service.store.cancel(args[0]);
       result = { cancelRequested: true };
-    } else if (command === "inbox")
-      result = { entries: service.store.inbox(), path: service.exportInbox() };
-    else if (command === "journal")
+    } else if (command === "inbox") {
+      if (args[0] === "rebuild")
+        result = {
+          path: service.exportInbox(),
+          ...service.inbox({ action: "index" }),
+        };
+      else if (args[0] === "index") result = service.inbox({ action: "index" });
+      else if (args[0] === "volume")
+        result = service.inbox({
+          action: "volume",
+          volume: Number(args[1]),
+          snapshot: args[2],
+        });
+      else {
+        if (args.length) throw new Error("Unknown inbox action");
+        result = { entries: service.inbox(), path: service.exportInbox() };
+      }
+    } else if (command === "journal")
       result = service.journal(
         args[0],
         JSON.parse(readFileSync(args[1], "utf8")),

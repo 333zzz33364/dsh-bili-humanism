@@ -131,7 +131,7 @@ export function apply(ctx, config = {}) {
   );
   register(
     "bili_humanism_journal",
-    "Save a local reviewable journal. Read the humanistic prompt first. Separate facts, author views and inference. No public delivery. Evidence timestamps required for factual claims.",
+    "Save a local reviewable journal only for worthwhile understanding; at most two new entries per Asia/Shanghai day, no required daily output. Exact reading/body retries reuse the existing ID. Read the humanistic prompt first. Separate facts, author views and inference. No public delivery. Evidence timestamps required for factual claims.",
     {
       readingId: str("Reading ID"),
       json: str(
@@ -142,9 +142,19 @@ export function apply(ctx, config = {}) {
   );
   register(
     "bili_humanism_inbox",
-    "Read the private local inbox of reviewable journals.",
-    {},
-    () => service.store.inbox(),
+    "Read private journals completely. For large inboxes first action:index, then action:volume following nextVolume with the same snapshot. Verify fullEqualsIndex and volumeSumEqualsIndex; a preview is not the whole archive. No arguments retains the small-inbox array; oversized arrays explicitly error.",
+    {
+      action: { type: "string", enum: ["index", "volume"] },
+      volume: {
+        type: "integer",
+        description: "0-based volume from index/nextVolume",
+      },
+      snapshot: str(
+        "Snapshot returned by index; required for volume reads",
+        false,
+      ),
+    },
+    (a) => service.inbox(a),
   );
   register(
     "bili_humanism_memory",

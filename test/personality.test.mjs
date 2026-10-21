@@ -9,7 +9,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Service } from "../lib/service.mjs";
+import { Service, noteBody } from "../lib/service.mjs";
 import { apply } from "../index.js";
 import {
   revisePersonality,
@@ -41,15 +41,19 @@ function fixture(config = {}) {
     sentence = "合成反思：为尚未了解的处境保留空间。",
     created = "2026-10-20T16:30:00.000Z",
   ) {
-    const result = service.journal(reading.id, {
+    const raw = {
       encounter: "Synthetic fixture",
       revision: sentence,
       missing: "Synthetic coverage only",
       evidence: [],
-    });
+    };
+    const result = {
+      id: service.store.note(reading.id, noteBody(raw, reading)),
+    };
     service.store.db
       .prepare("UPDATE notes SET created=? WHERE id=?")
       .run(created, result.id);
+    service.exportInbox(); // Trusted fixture changed a date outside the journal API.
     return { journalId: result.id, sentence };
   }
   return { root, service, note, path: join(root, "human-world.md") };
