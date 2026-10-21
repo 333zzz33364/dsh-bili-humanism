@@ -1,3 +1,5 @@
+![人类是什么？——DSH B站内容学习插件头图](docs/assets/header.png)
+
 # DSH B站内容学习插件
 
 > 寄往明日的信笺｜让AI看见多彩的世界

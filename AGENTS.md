@@ -8,6 +8,8 @@ v1.3.2 preserves optional human-controlled history, favorites, likes and coins w
 
 Source, tests and docs belong in Git. work/, outputs/, credentials, ledgers, journals, account profiles, source transcripts/media, weights and character assets do not. Error logs must not expose credentials, signed URLs or raw platform responses.
 
+The user-provided project header at docs/assets/header.png is explicitly authorized for the public repository. This exception does not cover other private character assets or case material.
+
 Keep case studies, diary/journal examples, real video identifiers, personal project stories and demo screenshots local. They must not be added to the public repository or release assets. Public tests and command examples use synthetic data or clear placeholders only.
 
 Before a release run npm ci --ignore-scripts, npm run check, npm test, inspect npm pack contents, and verify the tarball in an isolated real DSH profile. Maintain truthful docs distinguishing implemented, tested, blocked and planned work. A synthetic demo is never evidence of real viewing quality.
