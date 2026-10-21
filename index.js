@@ -3,13 +3,13 @@ import z from "@deepseek-ai/schemastery";
 import { Service, safeError, readingView } from "./lib/service.mjs";
 import { readFileSync } from "node:fs";
 import { need } from "./lib/errors.mjs";
-import { checkTokenBudget } from "./lib/token-gate.mjs";
+import { checkTokenBudget, DEFAULT_SESSION_TOKENS } from "./lib/token-gate.mjs";
 export const name = "bili-humanism";
 export const inject = ["tools"];
 export const Config = z.object({
   dataDir: z.string().default(""),
   credentialPath: z.string().default(""),
-  maxSessionTokens: z.natural().default(60000),
+  maxSessionTokens: z.natural().default(DEFAULT_SESSION_TOKENS),
   enableHistoryWrites: z.boolean().default(false),
   enableFavoriteWrites: z.boolean().default(false),
   enableLikeWrites: z.boolean().default(false),
@@ -55,11 +55,10 @@ export function apply(ctx, config = {}) {
                 service.store,
                 String(session.id),
                 state?.last ? state.totals : null,
-                config.maxSessionTokens ?? 60000,
+                config.maxSessionTokens ?? DEFAULT_SESSION_TOKENS,
               );
               need(
-                metering.used === null ||
-                  metering.used <= (config.maxSessionTokens ?? 60000),
+                metering.used === null || metering.used <= metering.limit,
                 "TOKEN_BUDGET",
               );
             }

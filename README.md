@@ -10,7 +10,7 @@
 
 这是可安装的 DeepSeek Harness 插件。它读取 B站视频的文字来源，保留作者、链接、分 P、时间点与未覆盖部分，再由宿主模型写成可以追问、修正的私人手账。艺术、日常、游戏、音乐和没有实用产出的观看都可以成为遇见；允许没有推荐、没有新发现。
 
-**1.3.1 是预览版。** 每日信笺摘句与专用人格 Markdown 默认启用，主指令文件只保留固定读取入口。人格积累默认开启，可用 `enablePersonalityLearning: false` 关闭；历史、收藏、点赞与投币四个开关继续独立、默认关闭；只有开启对应开关才注册写入工具。评论入口暂不开放，私信、动态、关注和投稿也未实现；没有后台定时任务。本地收件箱仍是文件与 DSH 工具，没有独立侧栏或设置页。
+**1.3.2 是预览版。** 每日信笺摘句与专用人格 Markdown 默认启用，主指令文件只保留固定读取入口。人格积累默认开启，可用 `enablePersonalityLearning: false` 关闭；历史、收藏、点赞与投币四个开关继续独立、默认关闭；只有开启对应开关才注册写入工具。评论入口暂不开放，私信、动态、关注和投稿也未实现；没有后台定时任务。本地收件箱仍是文件与 DSH 工具，没有独立侧栏或设置页。
 
 历史、收藏、点赞与投币执行器已实现账号核对、范围授权、额度、重复检查、回读核验与结果不明时暂停。**离线接口测试和真实 DSH 安装验收不等于真实 B站写入实测；本版本未对真实账号发送写入请求。** 是否开启、使用哪个账号和收藏夹，由使用者自己判断并通过可信配置授权，可随时撤销。公开表达继续作为独立路线，须绑定具体目标和完整正文。
 
@@ -48,13 +48,13 @@ flowchart TB
 
 允许与使用者选择的外部插件组合，包括 [dsh-bili-scroll](https://github.com/c1overzz/dsh-bili-scroll)。本项目提供来源、覆盖说明、信笺和可修正的人格上下文；宿主可将按需读取的结果用于外部插件的后续工作。外部插件若承担评论等公开表达，须由使用者独立配置和授权，其发送、核验与撤销机制由该插件负责。本项目继续没有评论开关、工具或允许的接口，也不代理调用外部发送工具。
 
-已在固定 DSH 0.2.1-rc.2 中验证本项目 v1.3.1 安装包与 dsh-bili-scroll 0.1.19 指定提交的工具共存、本地配置读取和合成人格记录的宿主交接。尚未验证它的 Python MCP、独立 headless 自动轮次、评论发送或共同账号状态协调。具体 profile、工具入口及边界见[外部插件接驳](docs/EXTERNAL_INTEGRATION.md)。本次为主分支文档更新，v1.3.1 发布包保持原样。
+已在固定 DSH 0.2.1-rc.2 中验证本项目 v1.3.1 安装包与 dsh-bili-scroll 0.1.19 指定提交的工具共存、本地配置读取和合成人格记录的宿主交接。尚未验证它的 Python MCP、独立 headless 自动轮次、评论发送或共同账号状态协调。具体 profile、工具入口及边界见[外部插件接驳](docs/EXTERNAL_INTEGRATION.md)。该共存检查使用 v1.3.1，不扩大为本版与所有外部插件的兼容性承诺。
 
 ## 人类决定的写入开关
 
 可手动接入使用者拥有或获准管理的现有 agent 账号。使用者先停用原 agent 的写入与调度，再配置本地凭据、账号 UID、有效期和权限。插件核对实际登录账号，不会自动停止外部程序或迁移其资料。账号、凭据、历史和收藏清单都留在本地。开关和独立授权文件缺一不可，步骤见[写入配置](docs/WRITE_CONFIG.md)。
 
-| 权限 / 开关                   | 1.3.1 行为                              | 授权范围与约束                                                                       |
+| 权限 / 开关                   | 1.3.2 行为                              | 授权范围与约束                                                                       |
 | ----------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------ |
 | 历史 / `enableHistoryWrites`  | 用本地人类确认的消费回执同步分 P 和进度 | 默认关闭，绑定账号、目标范围、期限和额度；模型不能生成消费回执，取稿不能冒充完整播放 |
 | 收藏 / `enableFavoriteWrites` | 将内容加入指定收藏夹                    | 默认关闭，限定收藏夹、目标范围与可见性；移除另需该收藏夹的 `allowRemove` 授权        |
@@ -80,12 +80,12 @@ flowchart TB
 
 ## 安装与开始
 
-需要 Node.js 24+、DSH `0.2.1-rc.2`。1.3.1 已在 Windows 桌面内置 CLI 隔离安装 tarball，并验收 16 种平台开关组合（默认 11 个，显式关闭人格积累为 10 个，连同四项平台开关全部开启为 15 个工具）与无授权拒绝；51 项离线测试通过。v0.1.0 另通过 SDK JSON-RPC 真实 Agent 会话；桌面界面安装、独立 npm CLI 和其他版本尚未完成验收。
+需要 Node.js 24+、DSH `0.2.1-rc.2`。1.3.2 已在 Windows 桌面内置 CLI 隔离安装 tarball，并验收 16 种平台开关组合（默认 11 个，显式关闭人格积累为 10 个，连同四项平台开关全部开启为 15 个工具）与无授权拒绝；53 项离线测试通过。v0.1.0 另通过 SDK JSON-RPC 真实 Agent 会话；桌面界面安装、独立 npm CLI 和其他版本尚未完成验收。
 
-从 [Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 下载 `dsh-bili-humanism-1.3.1.tgz` 后：
+从 [Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 下载 `dsh-bili-humanism-1.3.2.tgz` 后：
 
 ```sh
-dsh plugin --profile web add ./dsh-bili-humanism-1.3.1.tgz
+dsh plugin --profile web add ./dsh-bili-humanism-1.3.2.tgz
 dsh --profile web --dump-config
 dsh --profile web
 ```
@@ -93,7 +93,7 @@ dsh --profile web
 桌面版请在内置插件管理器安装同一包并重新加载；该界面安装路径尚未实测。也可将下面的 GitHub 固定标签地址交给 `dsh plugin add`：
 
 ```sh
-dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.3.1
+dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.3.2
 ```
 
 发布入口是现成的 JavaScript，没有安装构建脚本。建议使用 release 包并核对 SHA-256；需要防止标签移动时，以该 release 对应的完整 commit SHA 固定 GitHub 安装来源。
@@ -106,7 +106,7 @@ dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.3.1
 
 ## 已实现与限制
 
-| 路线 / 能力         | 1.3.1 状态                                                                                     |
+| 路线 / 能力         | 1.3.2 状态                                                                                     |
 | ------------------- | ---------------------------------------------------------------------------------------------- |
 | A2 官方 AI 文字来源 | 已实现并做过真实接口功能检查；需要本机登录凭据。摘要/提纲不能冒充逐字稿                        |
 | A1 字幕轨           | 已实现并做过真实接口功能检查；匿名读取可能没有字幕                                             |
@@ -135,7 +135,7 @@ dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.3.1
   config:
     dataDir: /your/private/bili-humanism
     credentialPath: /your/private/credential.json
-    maxSessionTokens: 60000
+    maxSessionTokens: 600000
     enablePersonalityLearning: true
     enableHistoryWrites: false
     enableFavoriteWrites: false
@@ -159,7 +159,7 @@ bili-humanism resume --acknowledge-account-risk
 
 每个网络任务最多 12 次请求、3 个候选、90 秒；单个本地 ASR 任务最多 600 秒音频并受总墙钟限制。JSON 响应上限 4 MiB，媒体 32 MiB；模型单页来源文字约 16,000 字符，后续用 `bili_humanism_source` 按偏移读取。
 
-若 DSH 提供 provider usage，插件从首次带计量的调用建立持久化会话基线，默认累计增量超过 60,000 tokens 后拒绝继续读取或改写记录。它包括同一宿主会话内的其他工作，不能精确归因给本插件；不能截断已发出的模型请求，单次请求可能越过额度。状态、取消、删除记忆、收件箱和已有来源查看仍可使用。缺计量时显示未知；已有计量突然消失或计数倒退会拒绝继续。CLI 网络任务不调用模型，结果中的 `tokens: null` 表示未取得模型用量，不能按零消耗解释。已在真实账号模型会话中取得宿主计量；超额拒绝逻辑仍以离线测试为依据，不把本次功能验收视作整场对话的费用上限证明。
+若 DSH 提供 provider usage，插件从首次带计量的调用建立持久化会话基线，默认累计增量超过 600,000 tokens 后拒绝继续读取或改写记录。maxSessionTokens 可设为 1–600,000 的整数；显式配置的较小值继续生效，旧配置若保留 60000，须改为 600000 或移除该项并重载才能采用新额度。它包括同一宿主会话内的其他工作，不能精确归因给本插件；不能截断已发出的模型请求，单次请求可能越过额度。长视频精读可按 bili_humanism_source 的 next_offset 逐页读取，保留分段理解与未读进度；600k 是累计计量额度，不是单次上下文容量或完整观影保证。请求数、候选数、媒体时长、总时长预算仍独立。状态、取消、删除记忆、收件箱和已有来源查看仍可使用。缺计量时显示未知；已有计量突然消失或计数倒退会拒绝继续。CLI 网络任务不调用模型，结果中的 `tokens: null` 表示未取得模型用量，不能按零消耗解释。已在真实账号模型会话中取得宿主计量；超额拒绝逻辑仍以离线测试为依据，不把本次功能验收视作整场对话的费用上限证明。
 
 ```sh
 node bin/cli.mjs read BVxxxxxxxxxx

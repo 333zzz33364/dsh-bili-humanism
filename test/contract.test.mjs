@@ -45,76 +45,114 @@ test("pinned real DSH defineTool validates every registration and executes guide
   );
   dispose();
 });
-test("host token gate rejects a mutation after the durable session allowance", async () => {
-  const tools = new Map();
-  let dispose;
-  let count = 100;
-  const ctx = {
-    tools: {
-      register(t) {
-        tools.set(t.name, t);
-      },
-    },
-    on(_e, fn) {
-      dispose = fn;
-    },
-    get(name) {
-      assert.equal(name, "sessionProjections");
-      return {
-        stateOf() {
-          return {
-            last: {},
-            totals: {
-              uncachedInputTokens: count,
-              outputTokens: 0,
-              cacheReadTokens: 0,
-              cacheWriteTokens: 0,
+test("host token gate honors the 600k default and explicit smaller allowances", async (t) => {
+  assert.equal(plugin.Config({}).maxSessionTokens, 600_000);
+  for (const configured of [undefined, 60_000]) {
+    await t.test(
+      configured === undefined ? "omitted default" : "explicit 60k",
+      async () => {
+        const tools = new Map();
+        let dispose;
+        let count = 100;
+        const ctx = {
+          tools: {
+            register(t) {
+              tools.set(t.name, t);
             },
-          };
-        },
-      };
-    },
-  };
-  plugin.apply(ctx, {
-    dataDir: mkdtempSync(join(tmpdir(), "humanism-meter-")),
-    maxSessionTokens: 60,
-  });
-  const memory = tools.get("bili_humanism_memory");
-  const exec = { agent: { session: { id: "metered-session" } } };
-  const body = {
-    subject: "self",
-    understanding: "first",
-    evidence: "local test",
-  };
-  assert.equal(
-    JSON.parse(
-      await memory.execute(
-        { action: "put", id: "self", json: JSON.stringify(body) },
-        exec,
-      ),
-    ).revision,
-    1,
-  );
-  count = 161;
-  assert.equal(
-    JSON.parse(
-      await memory.execute(
-        {
-          action: "put",
-          id: "self",
-          json: JSON.stringify({ ...body, understanding: "should not commit" }),
-        },
-        exec,
-      ),
-    ).error,
-    "TOKEN_BUDGET",
-  );
-  const saved = JSON.parse(await memory.execute({ action: "list" }, exec));
-  assert.equal(saved[0].body.understanding, "first");
-  assert.equal(
-    JSON.parse(await memory.execute({ action: "delete", id: "self" }, exec))
-      .deleted,
-    true,
-  );
-  dispose();
+          },
+          on(_e, fn) {
+            dispose = fn;
+          },
+          get(name) {
+            assert.equal(name, "sessionProjections");
+            return {
+              stateOf() {
+                return {
+                  last: {},
+                  totals: {
+                    uncachedInputTokens: count,
+                    outputTokens: 0,
+                    cacheReadTokens: 0,
+                    cacheWriteTokens: 0,
+                  },
+                };
+              },
+            };
+          },
+        };
+        plugin.apply(ctx, {
+          dataDir: mkdtempSync(join(tmpdir(), "humanism-meter-")),
+          ...(configured === undefined ? {} : { maxSessionTokens: configured }),
+        });
+        const memory = tools.get("bili_humanism_memory");
+        const exec = { agent: { session: { id: "metered-session" } } };
+        const body = {
+          subject: "self",
+          understanding: "first",
+          evidence: "local test",
+        };
+        assert.equal(
+          JSON.parse(
+            await memory.execute(
+              { action: "put", id: "self", json: JSON.stringify(body) },
+              exec,
+            ),
+          ).revision,
+          1,
+        );
+        const limit = configured ?? 600_000;
+        for (const used of [60_000, 60_001, 600_000].filter(
+          (n) => n <= limit,
+        )) {
+          count = 100 + used;
+          assert.equal(
+            JSON.parse(
+              await memory.execute(
+                { action: "put", id: "within", json: JSON.stringify(body) },
+                exec,
+              ),
+            ).error,
+            undefined,
+            `usage ${used} should be allowed with limit ${limit}`,
+          );
+          const status = JSON.parse(
+            await tools.get("bili_humanism_status").execute({}, exec),
+          );
+          assert.equal(status.tokens.limit, limit);
+          assert.equal(status.tokens.used, used);
+        }
+        count = 100 + limit + 1;
+        assert.equal(
+          JSON.parse(
+            await memory.execute(
+              {
+                action: "put",
+                id: "self",
+                json: JSON.stringify({
+                  ...body,
+                  understanding: "should not commit",
+                }),
+              },
+              exec,
+            ),
+          ).error,
+          "TOKEN_BUDGET",
+        );
+        const saved = JSON.parse(
+          await memory.execute({ action: "list" }, exec),
+        );
+        assert.equal(
+          saved.find((item) => item.id === "self").body.understanding,
+          "first",
+        );
+        assert.equal(
+          JSON.parse(
+            await memory.execute({ action: "delete", id: "self" }, exec),
+          ).deleted,
+          true,
+        );
+        dispose();
+      },
+    );
+  }
 });

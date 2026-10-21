@@ -403,5 +403,19 @@ test("host token baseline survives restart; unknown samples are not zero usage",
     () => checkTokenBudget(store, "session-1", null, 60),
     (e) => e.code === "TOKEN_METER_UNAVAILABLE",
   );
+  assert.equal(
+    checkTokenBudget(store, "default-session", sample(100)).limit,
+    600_000,
+  );
+  assert.equal(
+    checkTokenBudget(store, "default-session", sample(600_100)).used,
+    600_000,
+  );
+  for (const limit of [0, -1, 1.5, 600_001, Number.POSITIVE_INFINITY]) {
+    assert.throws(
+      () => checkTokenBudget(store, "invalid-limit", sample(100), limit),
+      (e) => e.code === "INVALID_TOKEN_LIMIT",
+    );
+  }
   store.close();
 });
