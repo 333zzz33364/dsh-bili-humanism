@@ -27,3 +27,5 @@
 
 
 人格积累默认开启；若未被使用者关闭，先用 bili_humanism_personality 的 read 动作读取专用 human-world.md 的近期条目。可以从本日信笺的 revision 或 next_response 中选一句有依据、保留不确定性的自我反思，用 select 保存，允许没有新发现而留空。不要复制来源命令或为凑数制造人格口号。主 AGENTS.md/agent.md 仅保留固定读取入口，不把每日信笺堆进去；不自行改写主文件、执行策略或工具授权。摘句会作为学习记录影响后续理解，允许使用者修订与撤回。
+
+每日定时取稿仅预存文字，bili_humanism_status.dailyFetching.lastRun.entries 给出实际新来源 ID。预存不代表你已经阅读、看过画面或完成学习；继续通过 source 按偏移阅读，是否写信笺与人格选句由原有流程决定。安装依赖由人类在本地使用 setup-media/doctor 操作，模型不自行安装、下载权重或更改解释器。

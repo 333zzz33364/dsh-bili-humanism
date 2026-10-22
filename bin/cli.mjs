@@ -3,6 +3,11 @@ import { readFileSync } from "node:fs";
 import { Service, safeError } from "../lib/service.mjs";
 import { resolveUnknown, resumeWrites } from "../lib/writer.mjs";
 import {
+  setupOptions,
+  setupMedia,
+  doctorMedia,
+} from "../lib/media-environment.mjs";
+import {
   revisePersonality,
   deletePersonality,
   rebuildPersonality,
@@ -22,9 +27,25 @@ try {
     );
   if (command === "help")
     console.log(
-      "bili-humanism read BV [part] | visual READING_ID | visual-frames READING_ID [OFFSET] | local-frames READING_ID local-video.mp4 | candidates [1-3] | status | cancel ID | inbox [index | volume NUMBER SNAPSHOT | rebuild] | journal READING_ID note.json | import READING_ID segments.json | memory list/put/delete [ID] [json-file] | consumed READING_ID SECONDS --acknowledge-actual-consumption | history READING_ID CONSUMPTION_ID | favorite READING_ID FOLDER_ID add/remove | like READING_ID | coin READING_ID [TARGET_TOTAL] | personality read/select/revise/delete/rebuild/link | write-resolve OPERATION_ID applied/not-applied --acknowledge-unknown-result | write-resume --acknowledge-account-risk | resume --acknowledge-account-risk\nConfigure trusted local paths using BILI_HUMANISM_HOME / BILI_HUMANISM_CREDENTIAL_FILE / BILI_HUMANISM_CONFIG_FILE. Never put credential values in command arguments.",
+      "bili-humanism setup-media [--python ABSOLUTE_PYTHON] [--asr --download-model] | doctor | audio READING_ID | local-asr READING_ID local-audio [LOCAL_MODEL] | read BV [part] | visual READING_ID | visual-frames READING_ID [OFFSET] | local-frames READING_ID local-video.mp4 | candidates [1-3] | status | cancel ID | inbox [index | volume NUMBER SNAPSHOT | rebuild] | journal READING_ID note.json | import READING_ID segments.json | memory list/put/delete [ID] [json-file] | consumed READING_ID SECONDS --acknowledge-actual-consumption | history READING_ID CONSUMPTION_ID | favorite READING_ID FOLDER_ID add/remove | like READING_ID | coin READING_ID [TARGET_TOTAL] | personality read/select/revise/delete/rebuild/link | write-resolve OPERATION_ID applied/not-applied --acknowledge-unknown-result | write-resume --acknowledge-account-risk | resume --acknowledge-account-risk\nConfigure trusted local paths using BILI_HUMANISM_HOME / BILI_HUMANISM_CREDENTIAL_FILE / BILI_HUMANISM_CONFIG_FILE. Never put credential values in command arguments.",
     );
-  else {
+  else if (command === "setup-media") {
+    const options = setupOptions(args);
+    console.log(
+      JSON.stringify(
+        await setupMedia(config, options, {
+          progress: (stage) => console.error(JSON.stringify({ stage })),
+        }),
+        null,
+        2,
+      ),
+    );
+  } else if (command === "doctor") {
+    if (args.length) throw new Error("doctor takes no arguments");
+    const report = await doctorMedia(config);
+    console.log(JSON.stringify(report, null, 2));
+    if (report.frames.status !== "ready") process.exitCode = 2;
+  } else {
     service = new Service(config);
     let result;
     if (command === "read")

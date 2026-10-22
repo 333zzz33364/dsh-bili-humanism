@@ -89,7 +89,9 @@ function fixture(t, duration = 927, config = {}) {
         assert.fail("Unexpected synthetic request");
       },
       spawn: (_executable, argv, settings) => {
-        const doctor = basename(argv[0]) === "frame_environment.py";
+        const doctor = ["frame_environment.py", "asr_environment.py"].includes(
+          basename(argv[0]),
+        );
         if (!doctor) children.push(argv);
         return spawn(
           process.execPath,
@@ -219,7 +221,7 @@ test("host config and CLI preserve optional human limits, never model overrides"
         dispose = fn;
       },
     },
-    { dataDir: join(root, "host") },
+    { dataDir: join(root, "host"), enableDailyFetching: false },
   );
   try {
     const error = JSON.parse(

@@ -66,7 +66,7 @@ test("public journal tool deduplicates retries and shares a durable two-entry da
         dispose = fn;
       },
     },
-    { dataDir: f.root },
+    { dataDir: f.root, enableDailyFetching: false },
   );
   const tool = tools.get("bili_humanism_journal");
   const save = async (note) =>
@@ -356,7 +356,7 @@ test("registered tool keeps small inbox arrays and requires stable snapshots for
         dispose = fn;
       },
     },
-    { dataDir: root },
+    { dataDir: root, enableDailyFetching: false },
   );
   try {
     const tool = tools.get("bili_humanism_inbox");

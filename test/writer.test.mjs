@@ -176,6 +176,7 @@ test("write switches register only selected capabilities and have no default tra
       },
       {
         ...f.config,
+        enableDailyFetching: false,
         enableHistoryWrites: history,
         enableFavoriteWrites: favorites,
       },
@@ -582,7 +583,7 @@ test("all sixteen independent switch combinations register correctly and never e
           dispose = fn;
         },
       },
-      config,
+      { ...config, enableDailyFetching: false },
     );
     const expected = 13 + mask.toString(2).replaceAll("0", "").length;
     assert.equal(tools.size, expected);

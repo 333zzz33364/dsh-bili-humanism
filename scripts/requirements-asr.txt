@@ -1,0 +1,3 @@
+# Optional CPU ASR, installed with requirements-frames.txt in the managed venv.
+# Wheels only; no CUDA installation or source builds.
+faster-whisper==1.2.1

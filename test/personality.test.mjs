@@ -74,7 +74,7 @@ test("dedicated personality tool defaults on, blocks arbitrary paths and exposes
         dispose = fn;
       },
     },
-    { dataDir: f.root },
+    { dataDir: f.root, enableDailyFetching: false },
   );
   assert.equal(tools.size, 13);
   const tool = tools.get("bili_humanism_personality");
@@ -125,7 +125,11 @@ test("explicitly disabled personality learning removes the tool and rejects sele
         dispose = fn;
       },
     },
-    { dataDir: f.root, enablePersonalityLearning: false },
+    {
+      dataDir: f.root,
+      enablePersonalityLearning: false,
+      enableDailyFetching: false,
+    },
   );
   assert.equal(tools.size, 12);
   assert.equal(tools.has("bili_humanism_personality"), false);

@@ -1,0 +1,44 @@
+name: Optional CPU ASR environment
+on:
+  push:
+    paths:
+      - .github/workflows/asr.yml
+      - lib/media-environment.mjs
+      - scripts/asr_environment.py
+      - scripts/asr-model.json
+      - scripts/requirements-asr.txt
+      - scripts/requirements-frames.txt
+      - test/asr_environment_test.py
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  environment:
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.21.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+      - run: python test/asr_environment_test.py
+      - name: Install isolated frames and CPU ASR dependencies without weights
+        env:
+          BILI_HUMANISM_HOME: ${{ runner.temp }}/humanism-media
+        run: node bin/cli.mjs setup-media --asr
+      - name: Verify effective interpreter, imports and truthful missing-model state
+        env:
+          BILI_HUMANISM_HOME: ${{ runner.temp }}/humanism-media
+        run: >-
+          node --input-type=module -e "import {doctorMedia} from './lib/media-environment.mjs';
+          const d=await doctorMedia({dataDir:process.env.BILI_HUMANISM_HOME});
+          if(d.frames.status!=='ready'||d.asr.status!=='model_missing'||d.interpreterSource!=='managed')throw Error('Environment failed');
+          console.log(JSON.stringify(d));"

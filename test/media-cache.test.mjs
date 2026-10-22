@@ -224,7 +224,7 @@ test("an empty cached read reuses imported ASR across restart without losing pro
     rows,
   );
   const restarted = new Service(
-    { dataDir: root },
+    { dataDir: root, enableDailyFetching: false },
     { fetcher: () => assert.fail("Cached read must not request network") },
   );
   t.after(() => restarted.close());
@@ -312,7 +312,7 @@ test("registered DSH read, import and source tools preserve the reused ASR ID an
         dispose = fn;
       },
     },
-    { dataDir: root },
+    { dataDir: root, enableDailyFetching: false },
   );
   t.after(() => dispose());
   const call = async (name, args) =>

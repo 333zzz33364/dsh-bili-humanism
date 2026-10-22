@@ -21,7 +21,13 @@ export const Config = z.object({
     .string()
     .default("")
     .description(
-      "Human-configured absolute Python executable path for media processing; empty uses BILI_HUMANISM_PYTHON or python. Not a model tool parameter.",
+      "Human-configured absolute Python executable path; empty uses BILI_HUMANISM_PYTHON, the managed setup-media environment, then system Python. Not a model tool parameter.",
+    ),
+  asrModelPath: z
+    .string()
+    .default("")
+    .description(
+      "Optional human-configured absolute local faster-whisper model directory; empty uses the managed downloaded model. Not a model tool parameter.",
     ),
   maxMediaSeconds: z
     .natural()
@@ -53,6 +59,34 @@ export const Config = z.object({
   writePolicyPath: z.string().default(""),
   accountStateDir: z.string().default(""),
   enablePersonalityLearning: z.boolean().default(true),
+  enableDailyFetching: z
+    .boolean()
+    .default(true)
+    .description(
+      "Automatically prefetch text sources once per Asia/Shanghai day while the DSH host is running.",
+    ),
+  dailyFetchStart: z
+    .string()
+    .pattern(/^(?:[01]\d|2[0-3]):[0-5]\d$/)
+    .default("21:30")
+    .description(
+      "Human-configured window start, HH:mm in Asia/Shanghai. Reload after changing.",
+    ),
+  dailyFetchEnd: z
+    .string()
+    .pattern(/^(?:[01]\d|2[0-3]):[0-5]\d$/)
+    .default("22:00")
+    .description(
+      "Human-configured same-day hard cutoff, HH:mm in Asia/Shanghai; must be later than start.",
+    ),
+  dailyFetchLimit: z
+    .natural()
+    .min(1)
+    .max(2)
+    .default(2)
+    .description(
+      "Maximum successful new text sources per daily run, 1 or 2; not a guaranteed number when sources are unavailable.",
+    ),
 });
 export function apply(ctx, config = {}) {
   const service = new Service(config);
@@ -330,4 +364,5 @@ export function apply(ctx, config = {}) {
       (a, e) => service.platformWrite("coins", a, e?.signal),
     );
   ctx.on("dispose", () => service.close());
+  service.dailyFetcher.start();
 }

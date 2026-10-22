@@ -287,7 +287,7 @@ test("registered tools ignore old over-limit session controls and never request 
         throw new Error("Must not inspect unrelated session usage");
       },
     },
-    plugin.Config({ dataDir, maxReadTokens: 9 }),
+    plugin.Config({ dataDir, maxReadTokens: 9, enableDailyFetching: false }),
   );
   const exec = { agent: { session: { id: "old-session" } } };
   const call = async (name, args) =>

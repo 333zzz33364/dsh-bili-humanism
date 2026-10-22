@@ -61,6 +61,6 @@ try {
 
 ## 验证范围与来源
 
-此路径已用 Windows 桌面内置 CLI `0.2.1-rc.2` 在全新隔离主目录/profile 中安装 v1.5.0 发布包，验证 `dependencies`、bundle 注册、重复安装后原 profile 配置保留及 `guide`/`status` 工具加载。测试没有接触使用者现用 profile、账号凭据、真实模型或 B站请求；市场图形界面安装未验收。最终新版本的验收记录随 Release 更新。
+此路径已用 Windows 桌面内置 CLI `0.2.1-rc.2` 在全新隔离主目录/profile 中安装 v1.6.0 发布包，验证 `dependencies`、bundle 注册、重复安装后原 profile 配置保留及 `guide`/`status` 工具加载。测试没有接触使用者现用 profile、账号凭据、真实模型或 B站请求；市场图形界面安装未验收。最终新版本的验收记录随 Release 更新。
 
 宿主契约：[固定版本的组合包、profile 与本地 tarball 安装](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.2/docs/user/develop/basic/publish.zh.md)。市场目录：[awesome-dsh-plugin 收录规则](https://github.com/beancookie/awesome-dsh-plugin/blob/main/contributing.md)、[市场读取的 registry 来源](https://github.com/beancookie/dsh-plugin-registry/blob/main/src/registry.ts)。目录收录需维护方合并、生成并由市场刷新；准备条目或提交申请不等于已经可一键安装。

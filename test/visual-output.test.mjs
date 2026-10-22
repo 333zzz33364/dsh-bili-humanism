@@ -232,7 +232,7 @@ test("registered visual tools expose IDs and offsets, never model-supplied paths
         dispose = fn;
       },
     },
-    { dataDir: f.root },
+    { dataDir: f.root, enableDailyFetching: false },
   );
   assert.deepEqual(
     Object.keys(tools.get("bili_humanism_visual").parameters.properties),
@@ -316,7 +316,7 @@ test("one read tool call automatically chooses unified visual work and attaches 
           dispose = fn;
         },
       },
-      { dataDir: f.root },
+      { dataDir: f.root, enableDailyFetching: false },
     );
     const tool = tools.get("bili_humanism_read");
     const value = await tool.execute({ video: "BV0000000001" }, f.exec);
