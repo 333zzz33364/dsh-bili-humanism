@@ -1,6 +1,6 @@
 # Changelog
 
-## 未发布 — 源码
+## 1.7.0 — 2026-10-23
 
 新增取稿后的离线质检，补上"取到稿之后还能不能直接用"这一段。`probe READING_ID` 与 `audio-profile LOCAL_MEDIA` 只读本地账本和本地媒体：不联网、不带凭据、不调用模型，媒体只由人在命令行指定，模型工具 `bili_humanism_probe` 不接受路径、URL 或命令。
 
