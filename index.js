@@ -3,7 +3,7 @@ import z from "@deepseek-ai/schemastery";
 import { Service, safeError, readingView } from "./lib/service.mjs";
 import { readFileSync } from "node:fs";
 import { need } from "./lib/errors.mjs";
-import { checkTokenBudget, DEFAULT_SESSION_TOKENS } from "./lib/token-gate.mjs";
+import { DEFAULT_READ_TOKENS } from "./lib/token-gate.mjs";
 import {
   attachVisualPage,
   optionalVisualCapability,
@@ -23,13 +23,20 @@ export const Config = z.object({
     .description(
       "Human-configured absolute Python executable path for media processing; empty uses BILI_HUMANISM_PYTHON or python. Not a model tool parameter.",
     ),
+  maxReadTokens: z
+    .natural()
+    .min(1)
+    .max(Number.MAX_SAFE_INTEGER)
+    .description(
+      "Human-configured estimated token limit per transcript; overrides maxSessionTokens. Default 600000. One UTF-8 text byte counts as one estimated token, not provider usage. Reload after editing.",
+    ),
   maxSessionTokens: z
     .natural()
     .min(1)
     .max(Number.MAX_SAFE_INTEGER)
-    .default(DEFAULT_SESSION_TOKENS)
+    .default(DEFAULT_READ_TOKENS)
     .description(
-      "Human-configured cumulative session token limit; default 600000. Positive safe integer. Reload after editing; existing usage is retained. Not a provider billing cap.",
+      "Legacy human config alias for maxReadTokens; now applies independently per transcript, never to session totals. Default 600000. Reload after editing.",
     ),
   enableHistoryWrites: z.boolean().default(false),
   enableFavoriteWrites: z.boolean().default(false),
@@ -64,32 +71,6 @@ export function apply(ctx, config = {}) {
               Object.keys(args).every((k) => Object.hasOwn(parameters, k)),
               "UNKNOWN_PARAMETER",
             );
-            const observational =
-              [
-                "bili_humanism_guide",
-                "bili_humanism_status",
-                "bili_humanism_cancel",
-                "bili_humanism_inbox",
-                "bili_humanism_source",
-              ].includes(name) ||
-              (name === "bili_humanism_memory" &&
-                ["list", "delete"].includes(args.action)) ||
-              (name === "bili_humanism_personality" && args.action === "read");
-            if (!observational && exec?.agent?.session) {
-              const session = exec.agent.session;
-              const projection = ctx.get?.("sessionProjections");
-              const state = projection?.stateOf(session, "tokenUsage");
-              const metering = checkTokenBudget(
-                service.store,
-                String(session.id),
-                state?.last ? state.totals : null,
-                config.maxSessionTokens ?? DEFAULT_SESSION_TOKENS,
-              );
-              need(
-                metering.used === null || metering.used <= metering.limit,
-                "TOKEN_BUDGET",
-              );
-            }
             const value = await execute(args, exec);
             return structured ? value : JSON.stringify(value, null, 2);
           } catch (e) {

@@ -60,7 +60,7 @@ $DSH_HOME/profiles/<实际 profile 名>/cordis.patch.yml
 ```yaml
 - id: bili-humanism
   config:
-    maxSessionTokens: 600000
+    maxReadTokens: 600000
     enablePersonalityLearning: true
     enableHistoryWrites: false
     enableFavoriteWrites: false
@@ -74,7 +74,7 @@ $DSH_HOME/profiles/<实际 profile 名>/cordis.patch.yml
 
 profile patch 之后还可能叠加主目录级 patch 和命令行 `--patch`。如果保存后结果仍不同，检查这些更高优先级覆盖，不要反复重装插件或清空私人账本。
 
-`maxSessionTokens` 是可信人工配置的会话累计 token 判定门，默认 `600000`；重载后已有消耗基线继续保留。需要账号接入时，再阅读[账号接入](ACCOUNT_INTEGRATION.md)与[写入配置](WRITE_CONFIG.md)，不要在聊天或 issue 中提交 Cookie、密钥或完整配置转储。
+从 1.4.1 起，`maxReadTokens` 是每份取稿独立的估算 token 上限，默认 `600000`，按正文 UTF-8 字节数保守估算，不累计整场对话。旧字段 `maxSessionTokens` 继续兼容；两者同时填写时新字段优先，人工改高或改低后重载。详见[取稿额度](TOKEN_BUDGET.md)。需要账号接入时，再阅读[账号接入](ACCOUNT_INTEGRATION.md)与[写入配置](WRITE_CONFIG.md)，不要在聊天或 issue 中提交 Cookie、密钥或完整配置转储。
 
 ## 当前验证范围
 

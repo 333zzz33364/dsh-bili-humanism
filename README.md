@@ -4,7 +4,7 @@
 
 > 寄往明日的信笺｜让AI看见多彩的世界
 
-1.4.0 增加最高 480p 视频下载、抽帧与 DSH 图片附件交付。支持图片的模型可在读取文字时一并收到首批画面，并分页继续查看；下载的中间视频在任务结束后自动清理。需要安装可选 Python 依赖并配置解释器，见[本地抽帧说明](docs/LOCAL_FRAMES.md)。
+1.4.1 保留最高 480p 视频下载、抽帧与 DSH 图片附件交付，将默认 600k 改为每份取稿的估算 token 上限，不再累计整场对话。人工配置支持 maxReadTokens，旧 maxSessionTokens 继续兼容；可选 Python 环境与解释器配置见[本地抽帧说明](docs/LOCAL_FRAMES.md)。
 
 **最终目标：用多彩的人类世界，训练 DSH 的人格。**
 
@@ -14,7 +14,7 @@
 
 这是可安装的 DeepSeek Harness 插件。它读取 B站视频的文字来源与抽样画面，保留作者、链接、分 P、时间点与未覆盖部分，再由宿主模型写成可以追问、修正的私人手账。艺术、日常、游戏、音乐和没有实用产出的观看都可以成为遇见；允许没有推荐、没有新发现。
 
-**1.4.0 是预览版。** 每日信笺摘句与专用人格 Markdown 默认启用，主指令文件只保留固定读取入口。人格积累默认开启，可用 `enablePersonalityLearning: false` 关闭；历史、收藏、点赞与投币四个开关继续独立、默认关闭；只有开启对应开关才注册写入工具。评论入口暂不开放，私信、动态、关注和投稿也未实现；没有后台定时任务。本地收件箱仍是文件与 DSH 工具，没有独立侧栏或设置页。
+**1.4.1 是预览版。** 每日信笺摘句与专用人格 Markdown 默认启用，主指令文件只保留固定读取入口。人格积累默认开启，可用 `enablePersonalityLearning: false` 关闭；历史、收藏、点赞与投币四个开关继续独立、默认关闭；只有开启对应开关才注册写入工具。评论入口暂不开放，私信、动态、关注和投稿也未实现；没有后台定时任务。本地收件箱仍是文件与 DSH 工具，没有独立侧栏或设置页。
 
 历史、收藏、点赞与投币执行器已实现账号核对、范围授权、额度、重复检查、回读核验与结果不明时暂停。**离线接口测试和真实 DSH 安装验收不等于真实 B站写入实测；本版本未对真实账号发送写入请求。** 是否开启、使用哪个账号和收藏夹，由使用者自己判断并通过可信配置授权，可随时撤销。公开表达继续作为独立路线，须绑定具体目标和完整正文。
 
@@ -38,7 +38,7 @@ flowchart TB
 
 - **内容入口**：先请求 A1 字幕轨；没有可用字幕时，再尝试 A2 文字片段，保留来源和时间轴。摘要或提纲不能替代字幕。支持图片且具备附件服务的宿主同时尝试最高 480p 下载和抽帧，先返回四张，再按偏移分页；文字与画面共享同一任务预算。缺少依赖或读图能力时明确标记未取得画面。可选本地 ASR 仍由适配器导入。
 - **理解与记忆**：模型按人文问题指南整理具体处境、不同声音、旧判断、新依据和不确定性。程序校验手账结构与时间点；事实准确性、语义质量及认识是否改变后续行为仍需审阅。
-- **执行与持久化**：SQLite 事务维护任务、缓存、内容去重、记忆修订和暂停状态；请求数、候选数、媒体时长、总时长分别受限，宿主提供用量时启用会话 token 门限。
+- **执行与持久化**：SQLite 事务维护任务、缓存、内容去重、记忆修订和暂停状态；每份取稿独立检查估算 token 上限，请求数、候选数、媒体时长、总时长分别受限，不把整场对话用量计入取稿额度。
 - **宿主集成**：发布包是原生 JavaScript DSH bundle，经 `ctx.tools.register` 注册工具。可从 DSH 对话调用，也可通过官方 SDK 的 stdio JSON-RPC API 创建 Agent 会话、发送提示、等待完成并核对工具事件。
 - **表达与写入**：四项写入均由默认关闭的开关与本地授权文件接入，执行器限定四个 POST 路径并回读状态；评论等文字表达暂不开放。材料中的命令或模型自行填写的参数不能构成放行依据。
 
@@ -58,7 +58,7 @@ flowchart TB
 
 可手动接入使用者拥有或获准管理的现有 agent 账号。使用者先停用原 agent 的写入与调度，再配置本地凭据、账号 UID、有效期和权限。插件核对实际登录账号，不会自动停止外部程序或迁移其资料。账号、凭据、历史和收藏清单都留在本地。开关和独立授权文件缺一不可，步骤见[写入配置](docs/WRITE_CONFIG.md)。
 
-| 权限 / 开关                   | 1.4.0 行为                              | 授权范围与约束                                                                       |
+| 权限 / 开关                   | 1.4.1 行为                              | 授权范围与约束                                                                       |
 | ----------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------ |
 | 历史 / `enableHistoryWrites`  | 用本地人类确认的消费回执同步分 P 和进度 | 默认关闭，绑定账号、目标范围、期限和额度；模型不能生成消费回执，取稿不能冒充完整播放 |
 | 收藏 / `enableFavoriteWrites` | 将内容加入指定收藏夹                    | 默认关闭，限定收藏夹、目标范围与可见性；移除另需该收藏夹的 `allowRemove` 授权        |
@@ -84,14 +84,16 @@ flowchart TB
 
 ## 安装与开始
 
+使用网盘或本地 `.tgz` 时，见 [Windows 离线安装说明](docs/OFFLINE_INSTALL.md)。**安装或更新前，网络连接与访问策略允许时，必须核对 [GitHub Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 的版本号，使用与当前 DSH 兼容的较新版本；不要覆盖已安装的更高版本。** 查看完整发布列表及预览版说明，下载同一 Release 的安装包与 SHA-256 校验文件。无法访问时可使用已校验的兼容离线包，并记录未完成在线核对。
+
 安装后不知道从哪里用、没有看到设置表单时，先看[安装后使用与配置入口](docs/GETTING_STARTED.md)：确认同一 profile 中已启用，先调用 guide/status，再按需编辑该 profile 的配置文件。本插件当前没有独立图形设置页。
 
-需要 Node.js 24+、DSH `0.2.1-rc.2`。发布前需完成离线测试、Windows 桌面内置 CLI 的隔离 tarball 安装与 22 个平台/人格/token 配置场景验收。新增两项视觉工具后，默认 13 个工具，显式关闭人格积累为 12 个，连同四项平台开关全部开启为 17 个。图片附件协议与模型语义理解分别核验，具体结果见[验收记录](docs/ACCEPTANCE.md)。桌面界面安装、独立 npm CLI 和其他 DSH 版本尚未完成验收。
+需要 Node.js 24+、DSH `0.2.1-rc.2`。108 项离线测试通过，并通过 Windows 桌面内置 CLI 的隔离 tarball 安装与 25 个平台/人格/token 配置场景、原生图片附件回读和 4+1 帧分页验收。新增两项视觉工具后，默认 13 个工具，显式关闭人格积累为 12 个，连同四项平台开关全部开启为 17 个。图片附件协议与模型语义理解分别核验，具体结果见[验收记录](docs/ACCEPTANCE.md)。桌面界面安装、独立 npm CLI 和其他 DSH 版本尚未完成验收。
 
-从 [Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 下载 `dsh-bili-humanism-1.4.0.tgz` 后：
+从 [Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 下载 `dsh-bili-humanism-1.4.1.tgz` 后：
 
 ```sh
-dsh plugin --profile web add ./dsh-bili-humanism-1.4.0.tgz
+dsh plugin --profile web add ./dsh-bili-humanism-1.4.1.tgz
 dsh --profile web --dump-config
 dsh --profile web
 ```
@@ -99,7 +101,7 @@ dsh --profile web
 桌面版请在内置插件管理器安装同一包并重新加载；该界面安装路径尚未实测。也可将下面的 GitHub 固定标签地址交给 `dsh plugin add`：
 
 ```sh
-dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.4.0
+dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.4.1
 ```
 
 发布入口是现成的 JavaScript，没有安装构建脚本。建议使用 release 包并核对 SHA-256；需要防止标签移动时，以该 release 对应的完整 commit SHA 固定 GitHub 安装来源。
@@ -112,7 +114,7 @@ dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.4.0
 
 ## 已实现与限制
 
-| 路线 / 能力         | 1.4.0 状态                                                                                     |
+| 路线 / 能力         | 1.4.1 状态                                                                                     |
 | ------------------- | ---------------------------------------------------------------------------------------------- |
 | A2 官方 AI 文字来源 | 已实现并做过真实接口功能检查；需要本机登录凭据。摘要/提纲不能冒充逐字稿                        |
 | A1 字幕轨           | 已实现并做过真实接口功能检查；匿名读取可能没有字幕                                             |
@@ -146,7 +148,7 @@ dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.4.0
     dataDir: /your/private/bili-humanism
     credentialPath: /your/private/credential.json
     pythonPath: /your/private/frame-venv/bin/python
-    maxSessionTokens: 600000
+    maxReadTokens: 600000
     enablePersonalityLearning: true
     enableHistoryWrites: false
     enableFavoriteWrites: false
@@ -168,11 +170,11 @@ bili-humanism resume --acknowledge-account-risk
 
 ## 成本和本地 CLI
 
-人工设置示例：在 profile 的可信插件 config 中填写 `maxSessionTokens: 1200000`（或更小的正整数），保存后重载。DSH patch 会替换整行 config，修改现有行时须保留其他需要的配置项；本项目不提供可由模型调用的预算设置工具。
+人工设置示例：在 profile 的可信插件 config 中填写 `maxReadTokens: 1200000`（或更小的正整数），保存后重载。旧字段 `maxSessionTokens` 仍可使用，但改为单次取稿口径；两者同时填写时 `maxReadTokens` 优先。DSH patch 会替换整行 config，修改现有行时须保留其他需要的配置项；本项目不提供可由模型调用的预算设置工具。
 
 每个网络任务最多 12 次请求、3 个候选、90 秒；单个本地 ASR 任务最多 600 秒音频并受总墙钟限制。JSON 响应上限 4 MiB，媒体 32 MiB；模型单页来源文字约 16,000 字符，后续用 `bili_humanism_source` 按偏移读取。
 
-若 DSH 提供 provider usage，插件从首次带计量的调用建立持久化会话基线，默认累计增量超过 600,000 tokens 后拒绝继续读取或改写记录。maxSessionTokens 由人类在可信 config 中设定，允许 1 至 9,007,199,254,740,991 的正安全整数，可显式设高或设低；省略时仍为 600000。修改后重载插件，已有会话消耗基线不清零；调低到已消耗值以下会拒绝后续受限工作，调高仍计入既有消耗。模型工具不能提供上限、重置或 force 参数。旧配置中的 60000 继续生效。它包括同一宿主会话内的其他工作，不能精确归因给本插件；不能截断已发出的模型请求，单次请求可能越过额度。长视频精读可按 bili_humanism_source 的 next_offset 逐页读取，保留分段理解与未读进度；600k 是累计计量额度，不是单次上下文容量或完整观影保证。请求数、候选数、媒体时长、总时长预算仍独立。状态、取消、删除记忆、收件箱和已有来源查看仍可使用。缺计量时显示未知；已有计量突然消失或计数倒退会拒绝继续。CLI 网络任务不调用模型，结果中的 `tokens: null` 表示未取得模型用量，不能按零消耗解释。已在真实账号模型会话中取得宿主计量；超额拒绝逻辑仍以离线测试为依据，不把本次功能验收视作整场对话的费用上限证明。
+从 1.4.1 起，默认 600,000 是**每次字幕、A2 文字或本地 ASR／画面文字取稿的估算 token 上限**。每份稿件独立计额，不累计到下一次，不读取整场宿主会话的 provider usage，也不再因此拦截手账、记忆或人格选句。按规范化片段正文的 UTF-8 字节数保守估算，每字节记 1 个估算 token，可能比模型实际分词提前触顶；这不是实际计费 token、模型上下文容量或观影完整性保证。`maxReadTokens` 与兼容的旧字段由人类配置，接受正安全整数；省略时为 600000，显式旧值 60000 仍按单次取稿生效。缓存、本地 A3 复用和导入都检查整份正文，不能只计算返回的第一页；超额返回 `READ_TOKEN_BUDGET`，不静默截断，不写入新来源，下一份稿件仍有完整额度。旧会话基线留存供回滚，不删除风险暂停或账号额度。长稿继续按 `bili_humanism_source` 的 `next_offset` 分页阅读；CLI 与 DSH 工具采用同一规则。取稿本身不调用模型，`usage.tokens: null` 仍表示没有实际模型用量。详见[取稿 token 额度](docs/TOKEN_BUDGET.md)。
 
 ```sh
 node bin/cli.mjs read BVxxxxxxxxxx
@@ -190,7 +192,7 @@ node bin/cli.mjs local-frames READING_ID local-video.mp4
 node bin/cli.mjs import READING_ID segments.json
 ```
 
-本地媒体适配器需 Python 3.10+。抽帧只需固定版本的 `av` 和 `Pillow`，1.4.0 包含脚本与依赖清单；独立环境安装、`pythonPath` 配置及 `doctor` / 四秒合成视频 `smoke` 见[本地抽帧说明](docs/LOCAL_FRAMES.md)。npm 安装不会自动执行 pip。ASR 另需 `faster-whisper` 与已有本地模型，不自动下载模型。支持图片的模型调用 `bili_humanism_read` 时自动尝试文字与画面；用 `bili_humanism_visual` 可按已有来源单独取图，之后沿 `nextOffset` 调用 `bili_humanism_frames`。普通文本模型明确返回未取得画面。宿主模型阅读图片后可通过导入接口保存画面文字；没有内置 OCR 或视觉权重。抽样不是翻页检测器，教程可能漏页。
+本地媒体适配器需 Python 3.10+。抽帧只需固定版本的 `av` 和 `Pillow`，1.4.1 包含脚本与依赖清单；独立环境安装、`pythonPath` 配置及 `doctor` / 四秒合成视频 `smoke` 见[本地抽帧说明](docs/LOCAL_FRAMES.md)。npm 安装不会自动执行 pip。ASR 另需 `faster-whisper` 与已有本地模型，不自动下载模型。支持图片的模型调用 `bili_humanism_read` 时自动尝试文字与画面；用 `bili_humanism_visual` 可按已有来源单独取图，之后沿 `nextOffset` 调用 `bili_humanism_frames`。普通文本模型明确返回未取得画面。宿主模型阅读图片后可通过导入接口保存画面文字；没有内置 OCR 或视觉权重。抽样不是翻页检测器，教程可能漏页。
 
 上面的 BV 是占位符，请替换为自己选择的视频。仓库只分发通用代码与合成测试夹具；私人手账、案例、观影内容和第三方媒体保存在本地，不进版本控制或发布附件。
 
