@@ -6,6 +6,7 @@ import {
   mkdirSync,
   writeFileSync,
   readFileSync,
+  realpathSync,
   linkSync,
   symlinkSync,
 } from "node:fs";
@@ -24,7 +25,7 @@ import {
 import jpeg, { portrait } from "./visual-fixture.mjs";
 
 function fixture() {
-  const root = mkdtempSync(join(tmpdir(), "humanism-visual-output-"));
+  const root = realpathSync(mkdtempSync(join(tmpdir(), "humanism-visual-output-")));
   const path = join(root, "assets", "synthetic-frames");
   mkdirSync(path, { recursive: true });
   const file = "frame-000-0.00.jpg";
