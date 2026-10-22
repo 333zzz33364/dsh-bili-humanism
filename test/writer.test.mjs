@@ -155,10 +155,10 @@ const rejects = (promise, code) =>
 
 test("write switches register only selected capabilities and have no default traffic", async () => {
   for (const [history, favorites, expected] of [
-    [false, false, 13],
-    [true, false, 14],
-    [false, true, 14],
-    [true, true, 15],
+    [false, false, 14],
+    [true, false, 15],
+    [false, true, 15],
+    [true, true, 16],
   ]) {
     const f = fixture(),
       tools = new Map();
@@ -185,7 +185,7 @@ test("write switches register only selected capabilities and have no default tra
     const status = JSON.parse(
       await tools.get("bili_humanism_status").execute({}, {}),
     );
-    assert.equal(status.platformWriteTools.length, expected - 13);
+    assert.equal(status.platformWriteTools.length, expected - 14);
     assert.equal(f.calls.length, 0);
     dispose();
     f.service.close();
@@ -585,7 +585,7 @@ test("all sixteen independent switch combinations register correctly and never e
       },
       { ...config, enableDailyFetching: false },
     );
-    const expected = 13 + mask.toString(2).replaceAll("0", "").length;
+    const expected = 14 + mask.toString(2).replaceAll("0", "").length;
     assert.equal(tools.size, expected);
     assert.ok(
       ![...tools.keys()].some((n) =>
@@ -595,7 +595,7 @@ test("all sixteen independent switch combinations register correctly and never e
     const status = JSON.parse(
       await tools.get("bili_humanism_status").execute({}, {}),
     );
-    assert.equal(status.platformWriteTools.length, expected - 13);
+    assert.equal(status.platformWriteTools.length, expected - 14);
     for (const key of ["like", "coin"]) {
       if (!tools.has("bili_humanism_" + key)) continue;
       const result = JSON.parse(

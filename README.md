@@ -16,6 +16,8 @@
 
 保留 1.5.0 取消音频下载、ASR 和抽帧默认的 600 秒时长拦截，长视频按全片时长均匀采样；仍受下载大小、处理时间、请求数和帧数预算约束。保留每份取稿独立的 token 额度、最高 480p 下载、原生图片附件与中间视频自动清理。可选人工时长限额见[媒体预算](docs/MEDIA_LIMITS.md)，Python 依赖见[本地抽帧说明](docs/LOCAL_FRAMES.md)。
 
+未发布源码新增取稿后的离线质检：`probe` 与 `audio-profile` 只读本地账本和本地媒体，不联网、不带凭据、不调用模型，输出字数与分段覆盖、按全片和按有声段两种口径的字/分钟、专名形态分布、拉丁串与紧贴中文的短碎片、含繁体字形行数。它报告信号，不判定专名对错或语义质量；同一写法稳定地错，和稳定地对，在这个探针里看起来一样。见[取稿后的离线质检](docs/QUALITY.md)。
+
 **最终目标：用多彩的人类世界，训练 DSH 的人格。**
 
 让 AI 在人的创作与生活中学习理解人，认真对待人。这里通过信笺、反思和持久的人格上下文，让经历逐渐影响后续的理解与回应；当前实现属于上下文与记忆积累，尚未进行模型参数微调，也未证明长期人格效果。
@@ -100,7 +102,7 @@ Windows 桌面版请先按[下载、内置 CLI 安装、重开确认这三步](d
 
 安装后不知道从哪里用、没有看到设置表单时，先看[安装后使用与配置入口](docs/GETTING_STARTED.md)：确认同一 profile 中已启用，先调用 guide/status，再按需编辑该 profile 的配置文件。本插件当前没有独立图形设置页。
 
-需要 Node.js 24+、DSH `0.2.1-rc.2`。142 项离线测试通过，并通过 Windows 桌面内置 CLI 的隔离 tarball 安装；本版最终包完整宿主验收待补，预验收已验证真实隔离安装、原生图片附件回读和 4+1 帧分页。新增两项视觉工具后，默认 13 个工具，显式关闭人格积累为 12 个，连同四项平台开关全部开启为 17 个。图片附件协议与模型语义理解分别核验，具体结果见[验收记录](docs/ACCEPTANCE.md)。桌面界面安装、独立 npm CLI 和其他 DSH 版本尚未完成验收。
+需要 Node.js 24+、DSH `0.2.1-rc.2`。142 项离线测试通过，并通过 Windows 桌面内置 CLI 的隔离 tarball 安装；本版最终包完整宿主验收待补，预验收已验证真实隔离安装、原生图片附件回读和 4+1 帧分页。新增两项视觉工具后，1.6.0 发布包默认 13 个工具，显式关闭人格积累为 12 个，连同四项平台开关全部开启为 17 个。未发布源码另加一个只读质检工具 `bili_humanism_probe`，对应为 14、13、18 个；它只读本地账本、不联网、不调用模型，见[取稿后的离线质检](docs/QUALITY.md)。图片附件协议与模型语义理解分别核验，具体结果见[验收记录](docs/ACCEPTANCE.md)。桌面界面安装、独立 npm CLI 和其他 DSH 版本尚未完成验收。
 
 从 [Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 下载 `dsh-bili-humanism-1.6.0.tgz` 后：
 
@@ -132,6 +134,7 @@ dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.6.0
 | A1 字幕轨           | 已实现并做过真实接口功能检查；匿名读取可能没有字幕                                                            |
 | A3 本地 ASR         | 独立环境安装器、依赖诊断与可选固定版本模型下载；保留预算与显式本地 ASR 入口                                   |
 | 抽样画面            | 最高 480p 下载、最多 40 帧、四张一页的 DSH 图片附件；需要 Python 依赖及支持图片的模型；无内置 OCR，抽样会漏页 |
+| 取稿后离线质检      | 未发布源码：本地统计字数、分段覆盖、两种口径字/分钟、专名形态分布、拉丁串与碎片、简繁字形；不判对错、不做事实核查 |
 | 理解与手账          | 宿主模型按指南整理；程序检查结构、出处时间点，语义准确与人文质量仍需人工审阅                                  |
 | 记忆                | 可查看、覆盖修正、删除全部对应修订；只允许 AI 自我理解或使用者偏好，不接受第三方人格档案                      |
 | 任务控制            | SQLite 事务、任务互斥、缓存、结构化去重、取消、进程退出恢复、持久暂停                                         |
@@ -206,6 +209,9 @@ node bin/cli.mjs visual-frames READING_ID 4
 node bin/cli.mjs local-asr READING_ID local-audio.m4s /local/model-directory
 node bin/cli.mjs local-frames READING_ID local-video.mp4
 node bin/cli.mjs import READING_ID segments.json
+node bin/cli.mjs probe READING_ID --names "店铺=聚福楼,聚福搂"
+node bin/cli.mjs probe READING_ID --audio /local/audio.m4s
+node bin/cli.mjs audio-profile /local/audio.m4s --bucket 15
 ```
 
 本地媒体适配器需 Python 3.10+。抽帧只需固定版本的 `av` 和 `Pillow`，1.6.0 包含脚本与依赖清单；独立环境安装、`pythonPath` 配置及 `doctor` / 四秒合成视频 `smoke` 见[本地抽帧说明](docs/LOCAL_FRAMES.md)。npm 安装不会自动执行 pip。使用 `setup-media --asr --download-model` 明确安装 ASR 依赖并下载校验 small 模型；运行时不自动下载。支持图片的模型调用 `bili_humanism_read` 时自动尝试文字与画面；用 `bili_humanism_visual` 可按已有来源单独取图，之后沿 `nextOffset` 调用 `bili_humanism_frames`。普通文本模型明确返回未取得画面。宿主模型阅读图片后可通过导入接口保存画面文字；没有内置 OCR 或视觉权重。抽样不是翻页检测器，教程可能漏页。

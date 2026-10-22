@@ -17,6 +17,8 @@
     "bin",
     "prompts",
     "scripts/media.py",
+    "scripts/text_probe.py",
+    "scripts/audio_probe.py",
     "scripts/frame_environment.py",
     "scripts/requirements-frames.txt",
     "scripts/requirements-asr.txt",

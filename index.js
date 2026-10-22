@@ -220,6 +220,27 @@ export function apply(ctx, config = {}) {
     (a) => readingView(service.store.reading(a.readingId), a.offset ?? 0),
   );
   register(
+    "bili_humanism_probe",
+    "Compute offline statistics over an already fetched text source: characters per minute (plus an effective rate when a human-confirmed speech duration is supplied), proper-name form distribution, Latin strings and isolated Latin fragments, glyph drift and segment coverage. Reads the local ledger only; no network, no model call, no credential. Several forms of one name are a reading signal, not proof of an error, and one stable form may still be wrong.",
+    {
+      readingId: str("Existing reading ID; no URL or local path"),
+      names: str(
+        'Optional groups "object=form1,form2;object2=form3" for form counts; at most 8 groups of 8 forms',
+        false,
+      ),
+      speechSeconds: {
+        type: "number",
+        description:
+          "Optional effective speech seconds for this source, previously measured by the human with the local audio probe. Omitted means the probe cannot correct the denominator and the rate uses the full duration.",
+      },
+    },
+    (a) =>
+      service.probe(a.readingId, {
+        names: a.names,
+        speechSeconds: a.speechSeconds,
+      }),
+  );
+  register(
     "bili_humanism_candidates",
     "Read at most three public popular candidates. Watching art, ordinary life and entertainment need not produce an output.",
     { count: { type: "integer", description: "1–3; default 3" } },

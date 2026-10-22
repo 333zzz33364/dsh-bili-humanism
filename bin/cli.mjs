@@ -14,6 +14,28 @@ import {
   linkPersonality,
 } from "../lib/personality.mjs";
 const [command = "help", ...args] = process.argv.slice(2);
+// Flags are read positionally after their name so a value can never be mistaken for a path or ID.
+const parseFlags = (list, allowed) => {
+  const flags = {};
+  const rest = [];
+  for (let i = 0; i < list.length; i++) {
+    const key = list[i].startsWith("--") ? list[i].slice(2) : null;
+    if (key && allowed.includes(key)) flags[key] = list[++i];
+    else rest.push(list[i]);
+  }
+  return { flags, rest };
+};
+const audioOptions = (flags) => {
+  const out = {};
+  for (const [flag, key] of [
+    ["bucket", "bucket"],
+    ["threshold", "threshold"],
+    ["min-run", "minRun"],
+    ["max-seconds", "maxSeconds"],
+  ])
+    if (flags[flag] !== undefined) out[key] = Number(flags[flag]);
+  return out;
+};
 const config = {
   dataDir: process.env.BILI_HUMANISM_HOME,
   credentialPath: process.env.BILI_HUMANISM_CREDENTIAL_FILE,
@@ -27,7 +49,7 @@ try {
     );
   if (command === "help")
     console.log(
-      "bili-humanism setup-media [--python ABSOLUTE_PYTHON] [--asr --download-model] | doctor | audio READING_ID | local-asr READING_ID local-audio [LOCAL_MODEL] | read BV [part] | visual READING_ID | visual-frames READING_ID [OFFSET] | local-frames READING_ID local-video.mp4 | candidates [1-3] | status | cancel ID | inbox [index | volume NUMBER SNAPSHOT | rebuild] | journal READING_ID note.json | import READING_ID segments.json | memory list/put/delete [ID] [json-file] | consumed READING_ID SECONDS --acknowledge-actual-consumption | history READING_ID CONSUMPTION_ID | favorite READING_ID FOLDER_ID add/remove | like READING_ID | coin READING_ID [TARGET_TOTAL] | personality read/select/revise/delete/rebuild/link | write-resolve OPERATION_ID applied/not-applied --acknowledge-unknown-result | write-resume --acknowledge-account-risk | resume --acknowledge-account-risk\nConfigure trusted local paths using BILI_HUMANISM_HOME / BILI_HUMANISM_CREDENTIAL_FILE / BILI_HUMANISM_CONFIG_FILE. Never put credential values in command arguments.",
+      "bili-humanism setup-media [--python ABSOLUTE_PYTHON] [--asr --download-model] | doctor | audio READING_ID | local-asr READING_ID local-audio [LOCAL_MODEL] | read BV [part] | probe READING_ID [--names \"object=form1,form2\"] [--speech-seconds N] [--audio LOCAL_MEDIA] | audio-profile LOCAL_MEDIA | visual READING_ID | visual-frames READING_ID [OFFSET] | local-frames READING_ID local-video.mp4 | candidates [1-3] | status | cancel ID | inbox [index | volume NUMBER SNAPSHOT | rebuild] | journal READING_ID note.json | import READING_ID segments.json | memory list/put/delete [ID] [json-file] | consumed READING_ID SECONDS --acknowledge-actual-consumption | history READING_ID CONSUMPTION_ID | favorite READING_ID FOLDER_ID add/remove | like READING_ID | coin READING_ID [TARGET_TOTAL] | personality read/select/revise/delete/rebuild/link | write-resolve OPERATION_ID applied/not-applied --acknowledge-unknown-result | write-resume --acknowledge-account-risk | resume --acknowledge-account-risk\nConfigure trusted local paths using BILI_HUMANISM_HOME / BILI_HUMANISM_CREDENTIAL_FILE / BILI_HUMANISM_CONFIG_FILE. Never put credential values in command arguments.",
     );
   else if (command === "setup-media") {
     const options = setupOptions(args);
@@ -140,7 +162,34 @@ try {
         args[0],
         JSON.parse(readFileSync(args[1], "utf8")),
       );
-    else if (command === "audio") result = await service.audio(args[0]);
+    else if (command === "probe") {
+      const { flags, rest } = parseFlags(args, [
+        "names",
+        "speech-seconds",
+        "audio",
+        "bucket",
+        "threshold",
+        "min-run",
+        "max-seconds",
+      ]);
+      result = await service.probe(rest[0], {
+        names: flags.names,
+        speechSeconds:
+          flags["speech-seconds"] === undefined
+            ? undefined
+            : Number(flags["speech-seconds"]),
+        audioFile: flags.audio,
+        audioOptions: audioOptions(flags),
+      });
+    } else if (command === "audio-profile") {
+      const { flags, rest } = parseFlags(args, [
+        "bucket",
+        "threshold",
+        "min-run",
+        "max-seconds",
+      ]);
+      result = await service.audioProbe(rest[0], audioOptions(flags));
+    } else if (command === "audio") result = await service.audio(args[0]);
     else if (command === "visual") result = await service.visual(args[0]);
     else if (command === "visual-frames")
       result = service.visualFrames(args[0], Number(args[1] || 0));
