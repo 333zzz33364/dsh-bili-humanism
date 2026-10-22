@@ -328,7 +328,8 @@ test("one read tool call automatically chooses unified visual work and attaches 
       tool.output.render({}, value).filter((b) => b.type === "image").length,
       1,
     );
-    assert.ok(!value.includes(f.path));
+    assert.equal(parsed.result.visual, undefined);
+    assert.ok(!value.includes(JSON.stringify(f.path).slice(1, -1)));
   } finally {
     dispose?.();
     if (previous) Service.prototype.readVisual = previous;

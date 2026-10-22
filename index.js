@@ -138,7 +138,8 @@ export function apply(ctx, config = {}) {
               r.result.visual,
               e?.signal,
             ));
-      return { ...r, result: readingView(r.result), visual };
+      const { visual: _localVisual, ...source } = r.result;
+      return { ...r, result: readingView(source), visual };
     },
     { schema: { type: "string" }, render: renderReadOutput },
   );
