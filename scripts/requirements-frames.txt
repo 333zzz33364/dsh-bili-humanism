@@ -1,0 +1,5 @@
+# Optional local frame extraction only. Install in a dedicated virtual environment.
+# Both support Python >=3.10; install official binary wheels, without source builds.
+# These are reviewed version pins, not a claim to track the newest release.
+av==16.1.0
+Pillow==12.3.0

@@ -185,7 +185,7 @@ node bin/cli.mjs local-frames READING_ID local-video.mp4
 node bin/cli.mjs import READING_ID segments.json
 ```
 
-本地媒体适配器需 Python 3.10+，ASR 需 `faster-whisper`，抽帧需 `av` 和 `Pillow`。它们是可选实验能力，未纳入核心安装包的 Python 依赖锁定，须在自己的隔离环境安装；不自动下载模型。解码和模型加载期间可被父进程总时限终止。ASR 只能辅助结构和大意，专名要回源。画面抽样不是翻页检测器，教程可能漏页。
+本地媒体适配器需 Python 3.10+。抽帧只需固定版本的 `av` 和 `Pillow`，可选依赖清单、独立环境安装方法以及 `doctor` / 四秒合成视频 `smoke` 入口见[本地抽帧说明](docs/LOCAL_FRAMES.md)。本次先更新 GitHub 源码，旧 release tarball 保持原样；旧包缺少新增脚本时从仓库源码获取，后续 npm 打包会包含脚本和清单，npm 安装不会自动执行 pip。ASR 另需 `faster-whisper` 与已有本地模型，不是抽帧的必需项，不自动下载模型。解码和模型加载期间可被父进程总时限终止。ASR 只能辅助结构和大意，专名要回源。抽帧输出仍需宿主视觉模型阅读，再通过导入接口保存画面文字；没有内置 OCR 或视觉权重，也不因只给链接就自动识别画面。画面抽样不是翻页检测器，教程可能漏页。
 
 上面的 BV 是占位符，请替换为自己选择的视频。仓库只分发通用代码与合成测试夹具；私人手账、案例、观影内容和第三方媒体保存在本地，不进版本控制或发布附件。
 

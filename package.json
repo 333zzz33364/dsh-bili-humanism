@@ -17,6 +17,8 @@
     "bin",
     "prompts",
     "scripts/media.py",
+    "scripts/frame_environment.py",
+    "scripts/requirements-frames.txt",
     "README.md",
     "LICENSE",
     "NOTICE.md",
