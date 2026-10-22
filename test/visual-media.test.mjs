@@ -218,7 +218,7 @@ test("dependency preflight, missing reading, duration and prior cancellation ref
   );
   assert.equal(f.calls.length, 0);
   cleaned(f);
-  const long = fixture(t, { duration: 601 });
+  const long = fixture(t, { duration: 601, limits: { asrSeconds: 600 } });
   await assert.rejects(visual(long), (e) => e.code === "MEDIA_DURATION_BUDGET");
   assert.equal(long.calls.length, 0);
   cleaned(long);

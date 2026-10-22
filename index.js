@@ -23,6 +23,14 @@ export const Config = z.object({
     .description(
       "Human-configured absolute Python executable path for media processing; empty uses BILI_HUMANISM_PYTHON or python. Not a model tool parameter.",
     ),
+  maxMediaSeconds: z
+    .natural()
+    .min(1)
+    .max(Number.MAX_SAFE_INTEGER)
+    .required(false)
+    .description(
+      "Optional human-configured media source-duration limit in seconds. Omitted means no fixed duration limit; request, byte, wall-time and frame-count budgets still apply. Not a model tool parameter.",
+    ),
   maxReadTokens: z
     .natural()
     .min(1)

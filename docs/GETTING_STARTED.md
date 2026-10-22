@@ -2,6 +2,8 @@
 
 本插件通过 DSH 对话中的工具使用，配置保存在运行该会话的 profile 中。当前没有单独的图形设置表单；导出 `Config` schema 负责校验配置和填充默认值，不会自动生成第三方插件页面。
 
+**还没安装成功时，先看[Windows 桌面安装三步](WINDOWS_INSTALL.md)。** 推荐插件市场只接受其精选目录中的条目，本插件尚未收录；桌面自带 CLI 可以安装本地 `.tgz`，并由宿主维护 profile 的依赖与 bundle 清单。
+
 ## 先确认装在当前 profile，并已启用
 
 在 DSH 侧栏的「插件」中检查已安装组合包 `dsh-bili-humanism` 是否启用。宿主的「设置 → 内置插件」主要提供内置插件清单；它不是本插件的配置入口。上述界面名称依据固定 DSH 版本的上游说明，本项目尚未单独验收桌面图形操作。
@@ -28,7 +30,7 @@ $ProfileName = Read-Host '请输入当前会话实际使用的 profile 名称'
 $PreviousElectronRunAsNode = $env:ELECTRON_RUN_AS_NODE
 try {
     $env:ELECTRON_RUN_AS_NODE = '1'
-    & $DshExe --expose-internals $DshCli --profile $ProfileName --dump-config
+    & $DshExe --expose-internals $DshCli --profile $ProfileName --dump-config | Out-Host
     if ($LASTEXITCODE -ne 0) { throw '配置检查失败，请查看终端错误' }
 } finally {
     $env:ELECTRON_RUN_AS_NODE = $PreviousElectronRunAsNode
