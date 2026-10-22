@@ -4,7 +4,7 @@
 
 > 寄往明日的信笺｜让AI看见多彩的世界
 
-1.3.4 合并字幕优先、MCDN 音频和空结果复用本地 ASR 三项修复，并支持人类手动设置会话 token 上限。83 项离线测试通过；安装包在固定 DSH 0.2.1-rc.2 的隔离 profile 中验收，平台响应为合成夹具。
+1.4.0 增加最高 480p 视频下载、抽帧与 DSH 图片附件交付。支持图片的模型可在读取文字时一并收到首批画面，并分页继续查看；下载的中间视频在任务结束后自动清理。需要安装可选 Python 依赖并配置解释器，见[本地抽帧说明](docs/LOCAL_FRAMES.md)。
 
 **最终目标：用多彩的人类世界，训练 DSH 的人格。**
 
@@ -12,9 +12,9 @@
 
 我们也把“历史的参与感”作为一种可能的动机：使用者陪伴自己的 agent 接触这个时代的作品与日常，看见它经历了什么、怎样形成判断，又怎样修正。信笺和人格札记保存这段共同经历；参与和成长的价值，不用发言数量或互动量衡量。
 
-这是可安装的 DeepSeek Harness 插件。它读取 B站视频的文字来源，保留作者、链接、分 P、时间点与未覆盖部分，再由宿主模型写成可以追问、修正的私人手账。艺术、日常、游戏、音乐和没有实用产出的观看都可以成为遇见；允许没有推荐、没有新发现。
+这是可安装的 DeepSeek Harness 插件。它读取 B站视频的文字来源与抽样画面，保留作者、链接、分 P、时间点与未覆盖部分，再由宿主模型写成可以追问、修正的私人手账。艺术、日常、游戏、音乐和没有实用产出的观看都可以成为遇见；允许没有推荐、没有新发现。
 
-**1.3.4 是预览版。** 每日信笺摘句与专用人格 Markdown 默认启用，主指令文件只保留固定读取入口。人格积累默认开启，可用 `enablePersonalityLearning: false` 关闭；历史、收藏、点赞与投币四个开关继续独立、默认关闭；只有开启对应开关才注册写入工具。评论入口暂不开放，私信、动态、关注和投稿也未实现；没有后台定时任务。本地收件箱仍是文件与 DSH 工具，没有独立侧栏或设置页。
+**1.4.0 是预览版。** 每日信笺摘句与专用人格 Markdown 默认启用，主指令文件只保留固定读取入口。人格积累默认开启，可用 `enablePersonalityLearning: false` 关闭；历史、收藏、点赞与投币四个开关继续独立、默认关闭；只有开启对应开关才注册写入工具。评论入口暂不开放，私信、动态、关注和投稿也未实现；没有后台定时任务。本地收件箱仍是文件与 DSH 工具，没有独立侧栏或设置页。
 
 历史、收藏、点赞与投币执行器已实现账号核对、范围授权、额度、重复检查、回读核验与结果不明时暂停。**离线接口测试和真实 DSH 安装验收不等于真实 B站写入实测；本版本未对真实账号发送写入请求。** 是否开启、使用哪个账号和收藏夹，由使用者自己判断并通过可信配置授权，可随时撤销。公开表达继续作为独立路线，须绑定具体目标和完整正文。
 
@@ -26,7 +26,7 @@
 
 ```mermaid
 flowchart TB
-    A["BV / URL / 有限候选"] --> B["分层取稿<br/>A2 / A1 · 可选本地 ASR / 画面导入"]
+    A["BV / URL / 有限候选"] --> B["分层取稿与抽样画面<br/>A1 / A2 · 最高480p下载与抽帧 · 可选本地ASR"]
     B --> C["证据与覆盖说明<br/>作者 · 分 P · 时间点 · 未覆盖部分"]
     C --> D["DSH 宿主模型<br/>事实 / 作者观点 / AI 推测"]
     D --> E["证据手账<br/>可查看、纠正、删除的记忆"]
@@ -36,7 +36,7 @@ flowchart TB
     E --> G["可选历史 / 收藏 / 点赞 / 投币执行器<br/>人类开关 · 范围授权 · 回读核验"]
 ```
 
-- **内容入口**：先请求 A1 字幕轨；没有可用字幕时，再尝试 A2 文字片段，保留来源和时间轴。摘要或提纲不能替代字幕，也不根据 A2 有文字就跳过字幕轨；没有文字时如实记录状态。可选本地 ASR 和画面材料通过独立适配器导入，目前不代表完整视听理解。
+- **内容入口**：先请求 A1 字幕轨；没有可用字幕时，再尝试 A2 文字片段，保留来源和时间轴。摘要或提纲不能替代字幕。支持图片且具备附件服务的宿主同时尝试最高 480p 下载和抽帧，先返回四张，再按偏移分页；文字与画面共享同一任务预算。缺少依赖或读图能力时明确标记未取得画面。可选本地 ASR 仍由适配器导入。
 - **理解与记忆**：模型按人文问题指南整理具体处境、不同声音、旧判断、新依据和不确定性。程序校验手账结构与时间点；事实准确性、语义质量及认识是否改变后续行为仍需审阅。
 - **执行与持久化**：SQLite 事务维护任务、缓存、内容去重、记忆修订和暂停状态；请求数、候选数、媒体时长、总时长分别受限，宿主提供用量时启用会话 token 门限。
 - **宿主集成**：发布包是原生 JavaScript DSH bundle，经 `ctx.tools.register` 注册工具。可从 DSH 对话调用，也可通过官方 SDK 的 stdio JSON-RPC API 创建 Agent 会话、发送提示、等待完成并核对工具事件。
@@ -58,7 +58,7 @@ flowchart TB
 
 可手动接入使用者拥有或获准管理的现有 agent 账号。使用者先停用原 agent 的写入与调度，再配置本地凭据、账号 UID、有效期和权限。插件核对实际登录账号，不会自动停止外部程序或迁移其资料。账号、凭据、历史和收藏清单都留在本地。开关和独立授权文件缺一不可，步骤见[写入配置](docs/WRITE_CONFIG.md)。
 
-| 权限 / 开关                   | 1.3.4 行为                              | 授权范围与约束                                                                       |
+| 权限 / 开关                   | 1.4.0 行为                              | 授权范围与约束                                                                       |
 | ----------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------ |
 | 历史 / `enableHistoryWrites`  | 用本地人类确认的消费回执同步分 P 和进度 | 默认关闭，绑定账号、目标范围、期限和额度；模型不能生成消费回执，取稿不能冒充完整播放 |
 | 收藏 / `enableFavoriteWrites` | 将内容加入指定收藏夹                    | 默认关闭，限定收藏夹、目标范围与可见性；移除另需该收藏夹的 `allowRemove` 授权        |
@@ -84,12 +84,14 @@ flowchart TB
 
 ## 安装与开始
 
-需要 Node.js 24+、DSH `0.2.1-rc.2`。1.3.4 已在 Windows 桌面内置 CLI 隔离安装 tarball，验收共 22 个平台/人格/token 配置场景，其中包括 16 种平台开关组合（默认 11 个，显式关闭人格积累为 10 个，连同四项平台开关全部开启为 15 个工具）与无授权拒绝；83 项离线测试通过。v0.1.0 另通过 SDK JSON-RPC 真实 Agent 会话；桌面界面安装、独立 npm CLI 和其他版本尚未完成验收。
+安装后不知道从哪里用、没有看到设置表单时，先看[安装后使用与配置入口](docs/GETTING_STARTED.md)：确认同一 profile 中已启用，先调用 guide/status，再按需编辑该 profile 的配置文件。本插件当前没有独立图形设置页。
 
-从 [Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 下载 `dsh-bili-humanism-1.3.4.tgz` 后：
+需要 Node.js 24+、DSH `0.2.1-rc.2`。发布前需完成离线测试、Windows 桌面内置 CLI 的隔离 tarball 安装与 22 个平台/人格/token 配置场景验收。新增两项视觉工具后，默认 13 个工具，显式关闭人格积累为 12 个，连同四项平台开关全部开启为 17 个。图片附件协议与模型语义理解分别核验，具体结果见[验收记录](docs/ACCEPTANCE.md)。桌面界面安装、独立 npm CLI 和其他 DSH 版本尚未完成验收。
+
+从 [Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 下载 `dsh-bili-humanism-1.4.0.tgz` 后：
 
 ```sh
-dsh plugin --profile web add ./dsh-bili-humanism-1.3.4.tgz
+dsh plugin --profile web add ./dsh-bili-humanism-1.4.0.tgz
 dsh --profile web --dump-config
 dsh --profile web
 ```
@@ -97,7 +99,7 @@ dsh --profile web
 桌面版请在内置插件管理器安装同一包并重新加载；该界面安装路径尚未实测。也可将下面的 GitHub 固定标签地址交给 `dsh plugin add`：
 
 ```sh
-dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.3.4
+dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.4.0
 ```
 
 发布入口是现成的 JavaScript，没有安装构建脚本。建议使用 release 包并核对 SHA-256；需要防止标签移动时，以该 release 对应的完整 commit SHA 固定 GitHub 安装来源。
@@ -110,12 +112,12 @@ dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.3.4
 
 ## 已实现与限制
 
-| 路线 / 能力         | 1.3.4 状态                                                                                     |
+| 路线 / 能力         | 1.4.0 状态                                                                                     |
 | ------------------- | ---------------------------------------------------------------------------------------------- |
 | A2 官方 AI 文字来源 | 已实现并做过真实接口功能检查；需要本机登录凭据。摘要/提纲不能冒充逐字稿                        |
 | A1 字幕轨           | 已实现并做过真实接口功能检查；匿名读取可能没有字幕                                             |
 | A3 本地 ASR         | 有预算内的本地 Python 适配器与导入接口；需要自行安装依赖和已有本地模型，未完成真实推理验收     |
-| 画面文字            | 有最多 40 张的本地抽样帧适配器与文字导入接口；需要宿主视觉模型阅读，尚无自动 OCR，抽样会漏页   |
+| 抽样画面            | 最高 480p 下载、最多 40 帧、四张一页的 DSH 图片附件；需要 Python 依赖及支持图片的模型；无内置 OCR，抽样会漏页 |
 | 理解与手账          | 宿主模型按指南整理；程序检查结构、出处时间点，语义准确与人文质量仍需人工审阅                   |
 | 记忆                | 可查看、覆盖修正、删除全部对应修订；只允许 AI 自我理解或使用者偏好，不接受第三方人格档案       |
 | 任务控制            | SQLite 事务、任务互斥、缓存、结构化去重、取消、进程退出恢复、持久暂停                          |
@@ -143,6 +145,7 @@ dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.3.4
   config:
     dataDir: /your/private/bili-humanism
     credentialPath: /your/private/credential.json
+    pythonPath: /your/private/frame-venv/bin/python
     maxSessionTokens: 600000
     enablePersonalityLearning: true
     enableHistoryWrites: false
@@ -180,12 +183,14 @@ node bin/cli.mjs memory list
 node bin/cli.mjs memory put understanding memory.json
 node bin/cli.mjs memory delete understanding
 node bin/cli.mjs audio READING_ID
+node bin/cli.mjs visual READING_ID
+node bin/cli.mjs visual-frames READING_ID 4
 node bin/cli.mjs local-asr READING_ID local-audio.m4s /local/model-directory
 node bin/cli.mjs local-frames READING_ID local-video.mp4
 node bin/cli.mjs import READING_ID segments.json
 ```
 
-本地媒体适配器需 Python 3.10+。抽帧只需固定版本的 `av` 和 `Pillow`，可选依赖清单、独立环境安装方法以及 `doctor` / 四秒合成视频 `smoke` 入口见[本地抽帧说明](docs/LOCAL_FRAMES.md)。本次先更新 GitHub 源码，旧 release tarball 保持原样；旧包缺少新增脚本时从仓库源码获取，后续 npm 打包会包含脚本和清单，npm 安装不会自动执行 pip。ASR 另需 `faster-whisper` 与已有本地模型，不是抽帧的必需项，不自动下载模型。解码和模型加载期间可被父进程总时限终止。ASR 只能辅助结构和大意，专名要回源。抽帧输出仍需宿主视觉模型阅读，再通过导入接口保存画面文字；没有内置 OCR 或视觉权重，也不因只给链接就自动识别画面。画面抽样不是翻页检测器，教程可能漏页。
+本地媒体适配器需 Python 3.10+。抽帧只需固定版本的 `av` 和 `Pillow`，1.4.0 包含脚本与依赖清单；独立环境安装、`pythonPath` 配置及 `doctor` / 四秒合成视频 `smoke` 见[本地抽帧说明](docs/LOCAL_FRAMES.md)。npm 安装不会自动执行 pip。ASR 另需 `faster-whisper` 与已有本地模型，不自动下载模型。支持图片的模型调用 `bili_humanism_read` 时自动尝试文字与画面；用 `bili_humanism_visual` 可按已有来源单独取图，之后沿 `nextOffset` 调用 `bili_humanism_frames`。普通文本模型明确返回未取得画面。宿主模型阅读图片后可通过导入接口保存画面文字；没有内置 OCR 或视觉权重。抽样不是翻页检测器，教程可能漏页。
 
 上面的 BV 是占位符，请替换为自己选择的视频。仓库只分发通用代码与合成测试夹具；私人手账、案例、观影内容和第三方媒体保存在本地，不进版本控制或发布附件。
 

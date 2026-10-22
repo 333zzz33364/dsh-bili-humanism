@@ -76,7 +76,7 @@ test("dedicated personality tool defaults on, blocks arbitrary paths and exposes
     },
     { dataDir: f.root },
   );
-  assert.equal(tools.size, 11);
+  assert.equal(tools.size, 13);
   const tool = tools.get("bili_humanism_personality");
   const read = JSON.parse(await tool.execute({ action: "read" }, {}));
   assert.equal(read.total, 0);
@@ -127,7 +127,7 @@ test("explicitly disabled personality learning removes the tool and rejects sele
     },
     { dataDir: f.root, enablePersonalityLearning: false },
   );
-  assert.equal(tools.size, 10);
+  assert.equal(tools.size, 12);
   assert.equal(tools.has("bili_humanism_personality"), false);
   for (const name of ["history", "favorite", "like", "coin", "comment"])
     assert.equal(tools.has("bili_humanism_" + name), false);

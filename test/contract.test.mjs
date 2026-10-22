@@ -23,7 +23,7 @@ test("pinned real DSH defineTool validates every registration and executes guide
     },
     { dataDir: mkdtempSync(join(tmpdir(), "humanism-contract-")) },
   );
-  assert.equal(tools.size, 11);
+  assert.equal(tools.size, 13);
   assert.ok(tools.has("bili_humanism_personality"));
   const status = JSON.parse(
     await tools.get("bili_humanism_status").execute({}, {}),

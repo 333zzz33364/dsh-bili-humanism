@@ -1,6 +1,16 @@
 # 本地抽帧依赖与宿主读图
 
-只把视频链接交给插件，当前不会自动识别画面。`bili_humanism_read` 获取字幕或 A2 文字；本地抽帧需自行准备视频文件，之后由支持读图的宿主查看图片。插件提供画面文字导入，未内置视觉模型、OCR 或模型下载器。
+1.4.0 增加插件自身的视频获取与抽帧链路：支持图片输入且具备附件服务的宿主调用 `bili_humanism_read` 时，可以在同一次任务中读取文字并取得首四张图片。`bili_humanism_visual` 按已有 readingId 单独获取画面，`bili_humanism_frames` 按偏移读取后续图片。未支持图片、缺少依赖或获取失败时明确说明未取得画面；字幕不代表看过画面。图片语义由宿主视觉模型理解，未内置视觉权重、OCR 或模型下载器。1.3.4 的旧 release 仍只有文字和手动本地抽帧入口，不具备新增自动链路。
+
+## 自动取图与中间视频清理
+
+自动链路只接受已保存来源的 BV/CID/分 P/时长，固定请求最高 480p（qn=32；qn=16 是 360p）。DASH 轨需具备有效的清晰度、尺寸和带宽；短边最多 480、长边最多 1920、总像素最多 921600，支持符合上限的横屏和竖屏。无 DASH 时仅接受单段 durl，不会只取多段视频的第一段。解码前检查视频流尺寸与时长，逐帧再次核对；未知或超预算的来源明确失败。
+
+文字和自动画面在一个任务内共用最多 12 次请求和 90 秒；媒体最多 32 MiB、来源最多 600 秒，最多保留 40 张均匀抽样 JPEG。单张最多 2 MiB，每页最多四张；宿主的附件上限可能更小。下载前先用同一个解释器执行依赖预检，缺失时返回 `FRAME_DEPENDENCIES_UNAVAILABLE`。所有子进程共享同一个取消/总时长预算；API 风控暂停不会被画面回退吞掉。
+
+插件在自己的 `dataDir/media-intermediates/` 下为本次下载创建独占文件，成功抽帧、解码或下载失败、取消和超时均在 finally 中关闭句柄/子进程后删除该视频及其空任务目录。清理核对创建时的文件/目录身份，不按后缀、分辨率、mtime 或目录批量删除；身份发生替换或删除失败则报告，不提交可复用的成功画面索引。帧 JPEG、manifest、来源索引和导入文字留在私有 assets/账本中供宿主继续阅读。
+
+普通 `local-frames READING_ID local-video.mp4` 读取的是用户提供的原文件，保持不动。旧技能或其他程序已经下载到其他位置的 480p 视频也不会被追删；本功能只清理新链路自己创建的中间视频。进程被硬终止或断电时不能保证 finally，遗留内容需本人核对，没有后台扫盘删除。
 
 ## 安装可选抽帧依赖
 
@@ -28,9 +38,18 @@ python3 -m venv .venv-frames
 export BILI_HUMANISM_PYTHON="$PWD/.venv-frames/bin/python"
 ```
 
-源码的 npm 打包清单包含两个 Python 脚本和依赖清单；本次先更新 GitHub 源码，已发布的旧 release tarball 不会因此改变。旧包没有新增文件时，请从 GitHub 仓库取得包含本说明的源码；后续由该源码构建的新包才会携带这些文件。若从这样的 npm 包使用，将命令中的 `scripts/` 改为该安装包内的实际脚本目录，虚拟环境放在自己的私有工作目录。npm 安装不会执行 pip 或安装 Python 依赖。`--only-binary` 在当前 Python/平台没有匹配 wheel 时明确失败，不会自动改成从源码编译；请选择存在官方 wheel 的 Python/平台后重试。
+1.4.0 的 npm 包含两个 Python 脚本和依赖清单，已发布的旧 1.3.4 tarball 不会因此改变。从 npm 包使用时，将命令中的 `scripts/` 改为该安装包内的实际脚本目录，虚拟环境放在自己的私有工作目录。npm 安装不会执行 pip 或安装 Python 依赖。`--only-binary` 在当前 Python/平台没有匹配 wheel 时明确失败，不会自动改成从源码编译；请选择存在官方 wheel 的 Python/平台后重试。
 
 `BILI_HUMANISM_PYTHON` 由启动 DSH 的进程继承；在另一个终端设置不保证已经运行的 Desktop 进程能看到。先在同一个终端用本地 CLI 验证，并让宿主采用同一个已确认的解释器路径。
+
+Desktop 可以在该 profile 的可信插件配置中填写绝对 `pythonPath`，保存后重载。优先顺序为人工 `pythonPath`、进程环境 `BILI_HUMANISM_PYTHON`、最后 `python`；相对的配置路径会被拒绝。模型工具没有解释器或路径设置参数。
+
+```sh
+node bin/cli.mjs visual READING_ID
+node bin/cli.mjs visual-frames READING_ID 4
+```
+
+CLI 返回受控图片元数据供本地检查；DSH 工具通过宿主附件协议把实际图片交给模型，单独的本机路径不算图片已送达。
 
 ## doctor 与 smoke 的含义
 

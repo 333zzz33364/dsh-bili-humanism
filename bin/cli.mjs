@@ -22,7 +22,7 @@ try {
     );
   if (command === "help")
     console.log(
-      "bili-humanism read BV [part] | candidates [1-3] | status | cancel ID | inbox [index | volume NUMBER SNAPSHOT | rebuild] | journal READING_ID note.json | import READING_ID segments.json | memory list/put/delete [ID] [json-file] | consumed READING_ID SECONDS --acknowledge-actual-consumption | history READING_ID CONSUMPTION_ID | favorite READING_ID FOLDER_ID add/remove | like READING_ID | coin READING_ID [TARGET_TOTAL] | personality read/select/revise/delete/rebuild/link | write-resolve OPERATION_ID applied/not-applied --acknowledge-unknown-result | write-resume --acknowledge-account-risk | resume --acknowledge-account-risk\nConfigure trusted local paths using BILI_HUMANISM_HOME / BILI_HUMANISM_CREDENTIAL_FILE / BILI_HUMANISM_CONFIG_FILE. Never put credential values in command arguments.",
+      "bili-humanism read BV [part] | visual READING_ID | visual-frames READING_ID [OFFSET] | local-frames READING_ID local-video.mp4 | candidates [1-3] | status | cancel ID | inbox [index | volume NUMBER SNAPSHOT | rebuild] | journal READING_ID note.json | import READING_ID segments.json | memory list/put/delete [ID] [json-file] | consumed READING_ID SECONDS --acknowledge-actual-consumption | history READING_ID CONSUMPTION_ID | favorite READING_ID FOLDER_ID add/remove | like READING_ID | coin READING_ID [TARGET_TOTAL] | personality read/select/revise/delete/rebuild/link | write-resolve OPERATION_ID applied/not-applied --acknowledge-unknown-result | write-resume --acknowledge-account-risk | resume --acknowledge-account-risk\nConfigure trusted local paths using BILI_HUMANISM_HOME / BILI_HUMANISM_CREDENTIAL_FILE / BILI_HUMANISM_CONFIG_FILE. Never put credential values in command arguments.",
     );
   else {
     service = new Service(config);
@@ -120,6 +120,9 @@ try {
         JSON.parse(readFileSync(args[1], "utf8")),
       );
     else if (command === "audio") result = await service.audio(args[0]);
+    else if (command === "visual") result = await service.visual(args[0]);
+    else if (command === "visual-frames")
+      result = service.visualFrames(args[0], Number(args[1] || 0));
     else if (command === "local-asr")
       result = await service.localMedia("asr", args[0], args[1], args[2]);
     else if (command === "local-frames")

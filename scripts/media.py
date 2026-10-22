@@ -6,6 +6,12 @@ Frames are visual evidence for a host vision model; this script does not claim O
 import argparse, json, math, time
 from pathlib import Path
 
+def check_dimensions(width,height,a):
+    if not (isinstance(width,int) and isinstance(height,int) and width>0 and height>0):raise RuntimeError('Invalid video dimensions')
+    if a.max_short_side and min(width,height)>a.max_short_side:raise RuntimeError('Decoded short side exceeds budget')
+    if a.max_long_side and max(width,height)>a.max_long_side:raise RuntimeError('Decoded long side exceeds budget')
+    if a.max_pixels and width*height>a.max_pixels:raise RuntimeError('Decoded pixels exceed budget')
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('mode',choices=['asr','frames'])
@@ -14,6 +20,9 @@ def main():
     p.add_argument('--max-seconds',type=float,default=600)
     p.add_argument('--max-wall-seconds',type=float,default=900)
     p.add_argument('--model',type=Path);p.add_argument('--interval',type=float,default=15)
+    p.add_argument('--max-short-side',type=int,default=0);p.add_argument('--max-long-side',type=int,default=0)
+    p.add_argument('--max-pixels',type=int,default=0)
+    p.add_argument('--strict-duration',action='store_true')
     a=p.parse_args()
     if not a.input.is_file() or not (0<a.duration<=a.max_seconds<=600):p.error('Existing local file and duration <= budget <=600 required')
     started=time.monotonic()
@@ -35,14 +44,23 @@ def main():
         a.output.mkdir(parents=True,exist_ok=True)
         timestamps=[];next_time=0
         with av.open(str(a.input)) as container:
+            if a.strict_duration:
+                if not container.streams.video:raise RuntimeError('No video stream')
+                stream=container.streams.video[0]
+                check_dimensions(stream.codec_context.width,stream.codec_context.height,a)
+                decoded_duration=float(stream.duration*stream.time_base) if stream.duration is not None and stream.time_base else float(container.duration/av.time_base) if container.duration is not None else None
+                if decoded_duration is not None and decoded_duration>a.max_seconds+1:raise RuntimeError('Decoded duration exceeds reserved budget')
             for frame in container.decode(video=0):
                 if time.monotonic()-started>a.max_wall_seconds:raise RuntimeError('Frame wall budget exceeded')
                 t=float(frame.time or 0)
+                check_dimensions(frame.width,frame.height,a)
+                if not math.isfinite(t) or t<0:raise RuntimeError('Invalid decoded timestamp')
+                if a.strict_duration and t>a.max_seconds+1:raise RuntimeError('Decoded duration exceeds reserved budget')
                 if t>a.max_seconds:break
                 if t>=next_time and len(timestamps)<40:
                     filename=f'frame-{len(timestamps):03d}-{t:.2f}.jpg'
                     frame.to_image().save(a.output/filename,quality=90)
-                    timestamps.append({'at':t,'file':filename});next_time=t+a.interval
+                    timestamps.append({'at':t,'file':filename,'width':frame.width,'height':frame.height});next_time=t+a.interval
         (a.output/'manifest.json').write_text(json.dumps({'route':'frame','duration':a.duration,'sampling':'uniform; may miss pages or motion','frames':timestamps,'next':'Host vision model may transcribe visible text to import JSON; preserve timestamps and uncertainty.'},ensure_ascii=False,indent=2),encoding='utf8')
     print(json.dumps({'mode':a.mode,'output':str(a.output),'elapsed_seconds':round(time.monotonic()-started,3)}))
 if __name__=='__main__':main()
