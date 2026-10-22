@@ -411,11 +411,55 @@ test("host token baseline survives restart; unknown samples are not zero usage",
     checkTokenBudget(store, "default-session", sample(600_100)).used,
     600_000,
   );
-  for (const limit of [0, -1, 1.5, 600_001, Number.POSITIVE_INFINITY]) {
+  for (const limit of [
+    0,
+    -1,
+    1.5,
+    Number.MAX_SAFE_INTEGER + 1,
+    Number.POSITIVE_INFINITY,
+  ]) {
     assert.throws(
       () => checkTokenBudget(store, "invalid-limit", sample(100), limit),
       (e) => e.code === "INVALID_TOKEN_LIMIT",
     );
   }
+  store.close();
+});
+
+test("human token-limit changes preserve the persisted usage baseline across restart", () => {
+  const root = temp();
+  const sample = (n) => ({
+    uncachedInputTokens: n,
+    outputTokens: 0,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+  });
+  let store = new Store(root);
+  assert.equal(
+    checkTokenBudget(store, "manual-session", sample(100), 1_200_000).used,
+    0,
+  );
+  assert.equal(
+    checkTokenBudget(store, "manual-session", sample(700_100), 1_200_000).used,
+    700_000,
+  );
+  store.close();
+  store = new Store(root);
+  const lowered = checkTokenBudget(
+    store,
+    "manual-session",
+    sample(750_100),
+    500_000,
+  );
+  assert.equal(lowered.used, 750_000);
+  assert.ok(lowered.used > lowered.limit);
+  const raised = checkTokenBudget(
+    store,
+    "manual-session",
+    sample(750_100),
+    2_000_000,
+  );
+  assert.equal(raised.used, 750_000);
+  assert.equal(raised.limit, 2_000_000);
   store.close();
 });

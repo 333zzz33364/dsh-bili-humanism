@@ -45,11 +45,11 @@ test("pinned real DSH defineTool validates every registration and executes guide
   );
   dispose();
 });
-test("host token gate honors the 600k default and explicit smaller allowances", async (t) => {
+test("host token gate honors the 600k default and human-set lower or higher limits", async (t) => {
   assert.equal(plugin.Config({}).maxSessionTokens, 600_000);
-  for (const configured of [undefined, 60_000]) {
+  for (const configured of [undefined, 60_000, 1_200_000]) {
     await t.test(
-      configured === undefined ? "omitted default" : "explicit 60k",
+      configured === undefined ? "omitted default" : `explicit ${configured}`,
       async () => {
         const tools = new Map();
         let dispose;
@@ -101,9 +101,9 @@ test("host token gate honors the 600k default and explicit smaller allowances", 
           1,
         );
         const limit = configured ?? 600_000;
-        for (const used of [60_000, 60_001, 600_000].filter(
-          (n) => n <= limit,
-        )) {
+        for (const used of [
+          ...new Set([60_000, 60_001, 600_000, limit]),
+        ].filter((n) => n <= limit)) {
           count = 100 + used;
           assert.equal(
             JSON.parse(

@@ -1,0 +1,349 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { mkdtempSync, writeFileSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { Service } from "../lib/service.mjs";
+import { permitted } from "../lib/network.mjs";
+import { apply } from "../index.js";
+
+const bv = "BV0000000001";
+const cdn = "https://synthetic.mcdn.bilivideo.cn:8082/synthetic.m4s";
+const json = (body) => new Response(JSON.stringify(body), { status: 200 });
+
+function fixture(t, options = {}) {
+  const root = mkdtempSync(join(tmpdir(), "humanism-media-cache-"));
+  const calls = [];
+  const credentialPath = join(root, "synthetic-credential.json");
+  writeFileSync(credentialPath, '{"sessdata":"SYNTHETIC_MEDIA_COOKIE"}');
+  const state = { subtitles: false };
+  const service = new Service(
+    {
+      dataDir: root,
+      ...(options.credential ? { credentialPath } : {}),
+      ...(options.limits ? { limits: options.limits } : {}),
+    },
+    {
+      fetcher: async (u, request) => {
+        const path = new URL(u).pathname;
+        calls.push({ path, request });
+        if (path === "/x/web-interface/view")
+          return json({
+            code: 0,
+            data: {
+              title: "Synthetic source",
+              owner: { name: "Synthetic author", mid: 1 },
+              pages: [{ page: 1, cid: 7, duration: 60 }],
+            },
+          });
+        if (path === "/x/player/wbi/v2")
+          return json({
+            code: 0,
+            data: {
+              subtitle: {
+                subtitles: state.subtitles
+                  ? [
+                      {
+                        lan: "zh-CN",
+                        subtitle_url:
+                          "https://aisubtitle.hdslb.com/synthetic.json",
+                      },
+                    ]
+                  : [],
+              },
+            },
+          });
+        if (path === "/synthetic.json")
+          return json({
+            body: [{ from: 0, to: 10, content: "Synthetic current subtitle" }],
+          });
+        if (path === "/x/player/playurl")
+          return json({
+            code: 0,
+            data: {
+              dash: {
+                audio: [{ bandwidth: 100, baseUrl: options.mediaURL || cdn }],
+              },
+            },
+          });
+        if (path === "/synthetic.m4s")
+          return (
+            options.mediaResponse?.() || new Response("SYNTHETIC_AUDIO_BYTES")
+          );
+        assert.fail("Unexpected synthetic endpoint");
+      },
+    },
+  );
+  t.after(() => service.close());
+  return { root, service, calls, state };
+}
+
+function seed(service, overrides = {}) {
+  return service.store.saveReading({
+    bvid: bv,
+    page: 1,
+    cid: 7,
+    duration: 60,
+    route: "none",
+    segments: [],
+    coverage: { state: "no_subtitles", speech: "unknown" },
+    ...overrides,
+  });
+}
+
+const asr = (text = "Synthetic local ASR, not independently verified") => ({
+  route: "A3",
+  duration: 60,
+  segments: [{ start: 0, end: 60, text }],
+});
+
+test("media allowlist accepts only the documented CDN host and port pairs", () => {
+  for (const u of [
+    cdn,
+    "https://synthetic.mcdn.bilivideo.cn/synthetic.m4s",
+    "https://synthetic.bilivideo.com/synthetic.m4s",
+  ])
+    assert.equal(permitted(u, "media").protocol, "https:");
+  for (const u of [
+    "http://synthetic.mcdn.bilivideo.cn:8082/synthetic.m4s",
+    "https://synthetic.mcdn.bilivideo.cn:80/synthetic.m4s",
+    "https://synthetic.mcdn.bilivideo.cn:4483/synthetic.m4s",
+    "https://synthetic.bilivideo.com:8082/synthetic.m4s",
+    "https://synthetic.bilivideo.cn:8082/synthetic.m4s",
+    "https://synthetic.mcdn.bilivideo.cn.evil.test:8082/synthetic.m4s",
+    "https://evil-mcdn.bilivideo.cn:8082/synthetic.m4s",
+    "https://user:password@synthetic.mcdn.bilivideo.cn:8082/synthetic.m4s",
+    "https://127.0.0.1:8082/synthetic.m4s",
+  ])
+    assert.throws(
+      () => permitted(u, "media"),
+      (e) => e.code === "URL_DENIED",
+    );
+  assert.throws(
+    () => permitted("https://api.bilibili.com:8082/x/player/playurl"),
+    (e) => e.code === "URL_DENIED",
+  );
+  assert.throws(
+    () =>
+      permitted("https://aisubtitle.hdslb.com:8082/synthetic.json", "subtitle"),
+    (e) => e.code === "URL_DENIED",
+  );
+});
+
+test("audio downloads a playurl-provided MCDN resource without forwarding credentials", async (t) => {
+  const { service, calls } = fixture(t, { credential: true });
+  const result = await service.audio(seed(service).id);
+  assert.equal(
+    readFileSync(result.result.path, "utf8"),
+    "SYNTHETIC_AUDIO_BYTES",
+  );
+  assert.equal(result.usage.requests, 2);
+  assert.equal(
+    calls[0].request.headers.Cookie,
+    "SESSDATA=SYNTHETIC_MEDIA_COOKIE",
+  );
+  assert.equal(calls[1].request.headers.Cookie, undefined);
+  assert.ok(
+    calls.every(
+      (c) => c.request.method === "GET" && c.request.redirect === "manual",
+    ),
+  );
+  assert.ok(!JSON.stringify(result).includes(cdn));
+});
+
+test("audio still rejects an off-list playurl resource before CDN dispatch", async (t) => {
+  const { service, calls } = fixture(t, {
+    mediaURL: "https://127.0.0.1:8082/synthetic.m4s",
+  });
+  await assert.rejects(
+    service.audio(seed(service).id),
+    (e) => e.code === "URL_DENIED",
+  );
+  assert.equal(calls.length, 1);
+});
+
+test("MCDN media keeps redirect, byte and request-budget limits", async (t) => {
+  for (const [options, code, count] of [
+    [
+      {
+        mediaResponse: () =>
+          new Response(null, {
+            status: 302,
+            headers: { Location: "https://evil.test/" },
+          }),
+      },
+      "HTTP_FAILED",
+      2,
+    ],
+    [
+      {
+        mediaResponse: () =>
+          new Response("small", {
+            headers: { "content-length": String(32 * 1024 * 1024 + 1) },
+          }),
+      },
+      "RESPONSE_TOO_LARGE",
+      2,
+    ],
+    [{ limits: { requests: 1 } }, "REQUESTS_BUDGET", 1],
+  ]) {
+    const { service, calls } = fixture(t, options);
+    await assert.rejects(
+      service.audio(seed(service).id),
+      (e) => e.code === code,
+    );
+    assert.equal(calls.length, count);
+  }
+});
+
+test("an empty cached read reuses imported ASR across restart without losing provenance or old IDs", async (t) => {
+  const { root, service, calls } = fixture(t);
+  const empty = (await service.read(bv)).result;
+  assert.equal(empty.route, "none");
+  const imported = (await service.importLocal(empty.id, asr())).result;
+  assert.notEqual(imported.id, empty.id);
+  const rows = service.store.db
+    .prepare("SELECT COUNT(*) AS count FROM readings")
+    .get().count;
+  calls.length = 0;
+  const read = await service.read(bv);
+  assert.equal(read.result.route, "A3");
+  assert.equal(read.result.id, imported.id);
+  assert.equal(read.result.segments.length, 1);
+  assert.equal(read.result.coverage.state, "asr_partial");
+  assert.match(read.result.localEvidence, /not independently verified/);
+  assert.equal(read.result.reusedLocalSource, true);
+  assert.equal(read.result.networkSource.route, "none");
+  assert.equal(read.result.networkSource.cached, true);
+  assert.equal(read.usage.requests, 0);
+  assert.equal(calls.length, 0);
+  assert.equal(service.store.reading(empty.id).segments.length, 0);
+  assert.equal(
+    service.store.db.prepare("SELECT COUNT(*) AS count FROM readings").get()
+      .count,
+    rows,
+  );
+  const restarted = new Service(
+    { dataDir: root },
+    { fetcher: () => assert.fail("Cached read must not request network") },
+  );
+  t.after(() => restarted.close());
+  assert.equal((await restarted.read(bv)).result.id, imported.id);
+});
+
+test("local ASR selection matches BV, part, CID and duration and does not replace speech with frame text", async (t) => {
+  const { service } = fixture(t);
+  const empty = (await service.read(bv)).result;
+  for (const difference of [
+    { bvid: "BVxxxxxxxxxx" },
+    { page: 2 },
+    { cid: 8 },
+    { duration: 59 },
+    { route: "frame" },
+  ])
+    seed(service, { ...asr(), ...difference });
+  assert.equal((await service.read(bv)).result.route, "none");
+  const first = (
+    await service.importLocal(empty.id, asr("Synthetic first import"))
+  ).result;
+  const latest = (
+    await service.importLocal(empty.id, asr("Synthetic later correction"))
+  ).result;
+  assert.notEqual(first.id, latest.id);
+  assert.equal((await service.read(bv)).result.id, latest.id);
+});
+
+test("freshly fetched empty results can reuse local ASR while current subtitles keep priority", async (t) => {
+  const { service, state } = fixture(t);
+  const empty = (await service.read(bv)).result;
+  const imported = (await service.importLocal(empty.id, asr())).result;
+  const expire = () =>
+    service.store.db
+      .prepare("UPDATE cache SET created=?")
+      .run(Date.now() - 7 * 3600_000);
+  expire();
+  const freshEmpty = await service.read(bv);
+  assert.equal(freshEmpty.result.id, imported.id);
+  assert.equal(freshEmpty.result.networkSource.cached, false);
+  assert.equal(freshEmpty.usage.requests, 2);
+  state.subtitles = true;
+  expire();
+  const freshSubtitle = await service.read(bv);
+  assert.equal(freshSubtitle.result.route, "A1");
+  assert.notEqual(freshSubtitle.result.id, imported.id);
+  assert.equal(freshSubtitle.result.reusedLocalSource, undefined);
+});
+
+test("available local ASR does not bypass a persisted risk pause", async (t) => {
+  const { service, calls } = fixture(t);
+  const empty = (await service.read(bv)).result;
+  await service.importLocal(empty.id, asr());
+  service.store.pause("SYNTHETIC_RISK");
+  calls.length = 0;
+  await assert.rejects(service.read(bv), (e) => e.code === "PERSISTENT_PAUSE");
+  assert.equal(calls.length, 0);
+});
+
+test("registered DSH read, import and source tools preserve the reused ASR ID and pagination", async (t) => {
+  const root = mkdtempSync(join(tmpdir(), "humanism-tool-cache-"));
+  const previousFetch = globalThis.fetch;
+  let requests = 0;
+  globalThis.fetch = async (url) => {
+    requests++;
+    const path = new URL(url).pathname;
+    if (path === "/x/web-interface/view")
+      return json({
+        code: 0,
+        data: { pages: [{ page: 1, cid: 7, duration: 60 }] },
+      });
+    if (path === "/x/player/wbi/v2")
+      return json({ code: 0, data: { subtitle: { subtitles: [] } } });
+    assert.fail("Unexpected synthetic tool endpoint");
+  };
+  t.after(() => {
+    globalThis.fetch = previousFetch;
+  });
+  const tools = new Map();
+  let dispose;
+  apply(
+    {
+      tools: { register: (tool) => tools.set(tool.name, tool) },
+      on: (_event, fn) => {
+        dispose = fn;
+      },
+    },
+    { dataDir: root },
+  );
+  t.after(() => dispose());
+  const call = async (name, args) =>
+    JSON.parse(await tools.get("bili_humanism_" + name).execute(args, {}));
+  const empty = await call("read", { video: bv });
+  const imported = await call("import", {
+    readingId: empty.result.id,
+    json: JSON.stringify({
+      route: "A3",
+      duration: 60,
+      segments: [
+        { start: 0, end: 30, text: "Synthetic first section ".repeat(600) },
+        { start: 30, end: 60, text: "Synthetic second section ".repeat(600) },
+      ],
+    }),
+  });
+  const reused = await call("read", { video: bv });
+  assert.equal(imported.error, undefined);
+  assert.equal(reused.result.id, imported.result.id);
+  assert.equal(reused.result.route, "A3");
+  assert.equal(reused.result.segment_count, 2);
+  assert.equal(reused.result.segments.length, 1);
+  assert.equal(reused.result.next_offset, 1);
+  assert.equal(reused.result.reusedLocalSource, true);
+  assert.equal(reused.usage.requests, 0);
+  assert.equal(requests, 2);
+  const source = await call("source", {
+    readingId: reused.result.id,
+    offset: reused.result.next_offset,
+  });
+  assert.equal(source.segment_count, 2);
+  assert.equal(source.next_offset, null);
+  assert.ok(source.segments[0].text.startsWith("Synthetic second section"));
+});
