@@ -1,12 +1,12 @@
-# 未发布维护候选 — 2026-10-23
+# 1.7.1 验收与发布门 — 2026-10-23
 
-基于公开 v1.7.0 / `75d5b8bec6e5e953ed7b3ac647d9d7d91280c8e6` 的独立维护分支。巡检发现 [CDN 连接重置反馈 #7](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/issues/7)、[读取设备 Cookie 反馈 #5](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/issues/5) 与 [macOS 主分支 CI 失败](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/actions/runs/39815818135)。CI 日志有两项安装器测试失败：临时目录穿过系统符号链接，触发 `VISUAL_PATH_DENIED` 或回退到系统 Python；修复只规范化测试夹具根目录，未放宽生产检查。
+基于公开 v1.7.0 / `75d5b8bec6e5e953ed7b3ac647d9d7d91280c8e6` 的维护修复。巡检发现 [CDN 连接重置反馈 #7](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/issues/7)、[读取设备 Cookie 反馈 #5](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/issues/5) 与 [macOS 主分支 CI 失败](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/actions/runs/39815818135)。CI 日志有两项安装器测试失败：临时目录穿过系统符号链接，触发 `VISUAL_PATH_DENIED` 或回退到系统 Python；修复只规范化测试夹具根目录，未放宽生产检查。
 
 `npm ci --ignore-scripts --offline --no-audit --no-fund`、36 个 JavaScript 文件语法检查和 **160/160 项 Windows 离线测试**通过。新增 13 项回归；其中网络、CDN 与缓存回归覆盖第三次连接恢复、全部失败、共享请求额度、取消/总时长/持久暂停、每次授权检查、POST 仅一次、HTTP/API 风险不重试、同清晰度/同尺寸备选、URL 拒绝、流读取失败、大小上限、私有中间视频清理，以及现有设备 Cookie 的 API/CDN/POST 隔离和缓存身份。将新增回归放到原始 v1.7.0 副本上运行，36 项中 11 项失败；修复后的全套均通过。错误输出不含原始网络异常或签名 URL。
 
 所有平台调用由合成响应替代，解码器使用合成夹具；本次没有真实 B站请求、账号写入、真实模型或 ASR 推理，不生成设备标识、不清除暂停。未采纳反馈中解除 412 持久暂停的建议，未开放评论。当前锁文件 npm audit 返回零已知告警；GitHub Dependabot 告警接口为 HTTP 403，不能据此声称 GitHub 告警为零，四项既有依赖更新未合入。
 
-macOS 修复尚未在实际 macOS runner 重跑；没有对候选包执行新的隔离真实 DSH 验收，原 v1.7.0 的完整最终包宿主验收缺口仍保留。此分支尚未发布，也不扩大宿主兼容承诺；发布前需完成必需测试、打包审计及最终包隔离真实宿主验收。
+v1.7.1 发布前必须完成同一提交的三系统 CI、打包审计和最终 tarball 的隔离真实 Windows DSH Desktop 内置 CLI 0.2.1-rc.2 验收，含工具开关、原生图片附件及分页、每稿额度、手账/人格、质检与每日取稿边界。最终完成记录、CI 链接及 SHA-256 见 [v1.7.1 Release](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases/tag/v1.7.1)；仅打包成功不算通过。macOS CI 只验证核心离线测试，不代表 macOS DSH 宿主验收。以下 v1.7.0 的未完成项是历史记录，不代替本版发布门。
 
 # 1.7.0 验收记录
 

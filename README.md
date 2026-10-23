@@ -12,9 +12,9 @@
 
 > 寄往明日的信笺｜让AI看见多彩的世界
 
-维护分支有尚未发布的网络恢复修复：GET 传输异常最多尝试三次；抽帧可按同清晰度备选 CDN 回退；读取可使用凭据文件中本人提供的现有 `buvid3`。域名/端口清单与风控暂停规则保持，POST 不重试。160 项 Windows 离线测试通过，macOS CI 和最终包隔离宿主验收待补；这些修复尚不在 v1.7.0 安装包内，见[验收记录](docs/ACCEPTANCE.md)。
+1.7.1 修复瞬时连接失败直接结束取稿的问题：GET 传输异常最多尝试三次，抽帧可沿同清晰度、同尺寸备选 CDN 回退。读取支持本人提供的现有 `buvid3`，不自动生成设备标识；域名/端口清单、POST 单次发送与持久风险暂停保留。见[验收记录](docs/ACCEPTANCE.md)。
 
-1.7.0 新增取稿后的离线质检：`probe` 与 `audio-profile` 只读本地账本和本地媒体，不联网、不带凭据、不调用模型，输出字数与分段覆盖、按全片和按有声段两种口径的字/分钟、专名形态分布、拉丁串与紧贴中文的短碎片、含繁体字形行数。它报告信号，不判定专名对错或语义质量；同一写法稳定地错，和稳定地对，在这个探针里看起来一样。见[取稿后的离线质检](docs/QUALITY.md)。
+1.7.1 新增取稿后的离线质检：`probe` 与 `audio-profile` 只读本地账本和本地媒体，不联网、不带凭据、不调用模型，输出字数与分段覆盖、按全片和按有声段两种口径的字/分钟、专名形态分布、拉丁串与紧贴中文的短碎片、含繁体字形行数。它报告信号，不判定专名对错或语义质量；同一写法稳定地错，和稳定地对，在这个探针里看起来一样。见[取稿后的离线质检](docs/QUALITY.md)。
 
 保留 1.6.0 内置的每日北京时间 21:30 启动一次文字取稿，22:00 截止，最多保存 2 份新稿；宿主需保持运行，空稿不计成功，重启不重复。`setup-media` 独立依赖安装和 `doctor` 诊断保留，可明确下载 ASR 模型；纯文本模型仍不能接收图片。见[每日取稿](docs/DAILY_FETCH.md)和[依赖安装](docs/LOCAL_FRAMES.md)。
 
@@ -28,7 +28,7 @@
 
 这是可安装的 DeepSeek Harness 插件。它读取 B站视频的文字来源与抽样画面，保留作者、链接、分 P、时间点与未覆盖部分，再由宿主模型写成可以追问、修正的私人手账。艺术、日常、游戏、音乐和没有实用产出的观看都可以成为遇见；允许没有推荐、没有新发现。
 
-**1.7.0 是预览版。** 每日信笺摘句与专用人格 Markdown 默认启用，主指令文件只保留固定读取入口。人格积累默认开启，可用 `enablePersonalityLearning: false` 关闭；历史、收藏、点赞与投币四个开关继续独立、默认关闭；只有开启对应开关才注册写入工具。评论入口暂不开放，私信、动态、关注和投稿也未实现；内置每日 21:30–22:00 的文字取稿，详见[每日取稿](docs/DAILY_FETCH.md)。本地收件箱仍是文件与 DSH 工具，没有独立侧栏或设置页。
+**1.7.1 是预览版。** 每日信笺摘句与专用人格 Markdown 默认启用，主指令文件只保留固定读取入口。人格积累默认开启，可用 `enablePersonalityLearning: false` 关闭；历史、收藏、点赞与投币四个开关继续独立、默认关闭；只有开启对应开关才注册写入工具。评论入口暂不开放，私信、动态、关注和投稿也未实现；内置每日 21:30–22:00 的文字取稿，详见[每日取稿](docs/DAILY_FETCH.md)。本地收件箱仍是文件与 DSH 工具，没有独立侧栏或设置页。
 
 历史、收藏、点赞与投币执行器已实现账号核对、范围授权、额度、重复检查、回读核验与结果不明时暂停。**离线接口测试和真实 DSH 安装验收不等于真实 B站写入实测；本版本未对真实账号发送写入请求。** 是否开启、使用哪个账号和收藏夹，由使用者自己判断并通过可信配置授权，可随时撤销。公开表达继续作为独立路线，须绑定具体目标和完整正文。
 
@@ -72,7 +72,7 @@ flowchart TB
 
 可手动接入使用者拥有或获准管理的现有 agent 账号。使用者先停用原 agent 的写入与调度，再配置本地凭据、账号 UID、有效期和权限。插件核对实际登录账号，不会自动停止外部程序或迁移其资料。账号、凭据、历史和收藏清单都留在本地。开关和独立授权文件缺一不可，步骤见[写入配置](docs/WRITE_CONFIG.md)。
 
-| 权限 / 开关                   | 1.7.0 行为                              | 授权范围与约束                                                                       |
+| 权限 / 开关                   | 1.7.1 行为                              | 授权范围与约束                                                                       |
 | ----------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------ |
 | 历史 / `enableHistoryWrites`  | 用本地人类确认的消费回执同步分 P 和进度 | 默认关闭，绑定账号、目标范围、期限和额度；模型不能生成消费回执，取稿不能冒充完整播放 |
 | 收藏 / `enableFavoriteWrites` | 将内容加入指定收藏夹                    | 默认关闭，限定收藏夹、目标范围与可见性；移除另需该收藏夹的 `allowRemove` 授权        |
@@ -104,12 +104,12 @@ Windows 桌面版请先按[下载、内置 CLI 安装、重开确认这三步](d
 
 安装后不知道从哪里用、没有看到设置表单时，先看[安装后使用与配置入口](docs/GETTING_STARTED.md)：确认同一 profile 中已启用，先调用 guide/status，再按需编辑该 profile 的配置文件。本插件当前没有独立图形设置页。
 
-需要 Node.js 24+、DSH `0.2.1-rc.2`。147 项离线测试通过，并通过 Windows 桌面内置 CLI 的隔离 tarball 安装；本版最终包完整宿主验收待补，预验收已验证真实隔离安装、原生图片附件回读和 4+1 帧分页。新增只读质检工具后，1.7.0 发布包默认 14 个工具，显式关闭人格积累为 13 个，连同四项平台开关全部开启为 18 个；`bili_humanism_probe` 只读本地账本、不联网、不调用模型，见[取稿后的离线质检](docs/QUALITY.md)。图片附件协议与模型语义理解分别核验，具体结果见[验收记录](docs/ACCEPTANCE.md)。桌面界面安装、独立 npm CLI 和其他 DSH 版本尚未完成验收。
+需要 Node.js 24+、DSH `0.2.1-rc.2`。160 项离线测试通过；本版发布门包括同提交的 Windows/Linux/macOS CI、最终 tarball 的隔离真实 DSH 安装、原生图片附件回读和 4+1 帧分页，最终哈希与完成结果见对应 [Release](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases/tag/v1.7.1)。新增只读质检工具后，1.7.1 发布包默认 14 个工具，显式关闭人格积累为 13 个，连同四项平台开关全部开启为 18 个；`bili_humanism_probe` 只读本地账本、不联网、不调用模型，见[取稿后的离线质检](docs/QUALITY.md)。图片附件协议与模型语义理解分别核验，具体结果见[验收记录](docs/ACCEPTANCE.md)。桌面界面安装、独立 npm CLI 和其他 DSH 版本尚未完成验收。
 
-从 [Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 下载 `dsh-bili-humanism-1.7.0.tgz` 后：
+从 [Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 下载 `dsh-bili-humanism-1.7.1.tgz` 后：
 
 ```sh
-dsh plugin --profile web add ./dsh-bili-humanism-1.7.0.tgz
+dsh plugin --profile web add ./dsh-bili-humanism-1.7.1.tgz
 dsh --profile web --dump-config
 dsh --profile web
 ```
@@ -117,7 +117,7 @@ dsh --profile web
 桌面版请在内置插件管理器安装同一包并重新加载；该界面安装路径尚未实测。也可将下面的 GitHub 固定标签地址交给 `dsh plugin add`：
 
 ```sh
-dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.7.0
+dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.7.1
 ```
 
 发布入口是现成的 JavaScript，没有安装构建脚本。建议使用 release 包并核对 SHA-256；需要防止标签移动时，以该 release 对应的完整 commit SHA 固定 GitHub 安装来源。
@@ -130,7 +130,7 @@ dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.7.0
 
 ## 已实现与限制
 
-| 路线 / 能力         | 1.7.0 状态                                                                                                    |
+| 路线 / 能力         | 1.7.1 状态                                                                                                    |
 | ------------------- | ------------------------------------------------------------------------------------------------------------- |
 | A2 官方 AI 文字来源 | 已实现并做过真实接口功能检查；需要本机登录凭据。摘要/提纲不能冒充逐字稿                                       |
 | A1 字幕轨           | 已实现并做过真实接口功能检查；匿名读取可能没有字幕                                                            |
@@ -216,7 +216,7 @@ node bin/cli.mjs probe READING_ID --audio /local/audio.m4s
 node bin/cli.mjs audio-profile /local/audio.m4s --bucket 15
 ```
 
-本地媒体适配器需 Python 3.10+。抽帧只需固定版本的 `av` 和 `Pillow`，1.7.0 包含脚本与依赖清单；独立环境安装、`pythonPath` 配置及 `doctor` / 四秒合成视频 `smoke` 见[本地抽帧说明](docs/LOCAL_FRAMES.md)。npm 安装不会自动执行 pip。使用 `setup-media --asr --download-model` 明确安装 ASR 依赖并下载校验 small 模型；运行时不自动下载。支持图片的模型调用 `bili_humanism_read` 时自动尝试文字与画面；用 `bili_humanism_visual` 可按已有来源单独取图，之后沿 `nextOffset` 调用 `bili_humanism_frames`。普通文本模型明确返回未取得画面。宿主模型阅读图片后可通过导入接口保存画面文字；没有内置 OCR 或视觉权重。抽样不是翻页检测器，教程可能漏页。
+本地媒体适配器需 Python 3.10+。抽帧只需固定版本的 `av` 和 `Pillow`，1.7.1 包含脚本与依赖清单；独立环境安装、`pythonPath` 配置及 `doctor` / 四秒合成视频 `smoke` 见[本地抽帧说明](docs/LOCAL_FRAMES.md)。npm 安装不会自动执行 pip。使用 `setup-media --asr --download-model` 明确安装 ASR 依赖并下载校验 small 模型；运行时不自动下载。支持图片的模型调用 `bili_humanism_read` 时自动尝试文字与画面；用 `bili_humanism_visual` 可按已有来源单独取图，之后沿 `nextOffset` 调用 `bili_humanism_frames`。普通文本模型明确返回未取得画面。宿主模型阅读图片后可通过导入接口保存画面文字；没有内置 OCR 或视觉权重。抽样不是翻页检测器，教程可能漏页。
 
 上面的 BV 是占位符，请替换为自己选择的视频。仓库只分发通用代码与合成测试夹具；私人手账、案例、观影内容和第三方媒体保存在本地，不进版本控制或发布附件。
 
