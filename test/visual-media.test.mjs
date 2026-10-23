@@ -200,6 +200,163 @@ test("durl single segment uses the same bounded decoder and cleans its intermedi
   cleaned(f);
 });
 
+test("CDN candidates preserve selected quality and dimensions, include backups, deduplicate and remain bounded", () => {
+  const backup = "https://backup.bilivideo.com/video.mp4";
+  const selected = videoTrack({
+    dash: {
+      video: [
+        { ...track, backupUrl: [cdn, backup], backup_url: [backup] },
+        {
+          ...track,
+          base_url: "https://other.bilivideo.com/video.mp4",
+          baseUrl: undefined,
+        },
+        {
+          ...track,
+          id: 16,
+          baseUrl: "https://other-quality.bilivideo.com/video.mp4",
+        },
+        {
+          ...track,
+          width: 640,
+          baseUrl: "https://other-size.bilivideo.com/video.mp4",
+        },
+      ],
+    },
+  });
+  assert.deepEqual(selected.alternatives, [
+    backup,
+    "https://other.bilivideo.com/video.mp4",
+  ]);
+  assert.equal(
+    videoTrack({
+      dash: {
+        video: [
+          {
+            ...track,
+            backupUrl: Array.from(
+              { length: 100 },
+              (_, n) => `https://cdn${n}.bilivideo.com/video.mp4`,
+            ),
+          },
+        ],
+      },
+    }).alternatives.length,
+    5,
+  );
+  assert.deepEqual(
+    videoTrack({
+      quality: 32,
+      durl: [{ url: cdn, size: 100, length: 4000, backup_url: [backup] }],
+    }).alternatives,
+    [backup],
+  );
+});
+
+test("visual recovers a reset first CDN using a same-quality backup within the shared budget", async (t) => {
+  let attempts = 0;
+  const backup = "https://backup.mcdn.bilivideo.cn:8082/video.mp4";
+  const f = fixture(t, {
+    data: { dash: { video: [{ ...track, backupUrl: [backup] }] } },
+    media: () => {
+      if (++attempts <= 3) throw new Error("synthetic reset");
+      return new Response("SYNTHETIC_VIDEO");
+    },
+  });
+  const result = await visual(f);
+  assert.equal(result.usage.requests, 5);
+  assert.deepEqual(
+    f.calls.slice(1).map((call) => call.url),
+    [cdn, cdn, cdn, backup],
+  );
+  assert.ok(
+    f.calls.slice(1).every((call) => call.request.headers.Cookie === undefined),
+  );
+  assert.equal(result.result.quality, 32);
+  cleaned(f);
+});
+
+test("visual skips denied URLs and falls back after HTTP or body transport failure without allowing new hosts", async (t) => {
+  for (const mode of ["denied", "malformed", "http", "body"]) {
+    let attempts = 0;
+    const f = fixture(t, {
+      data: {
+        dash: {
+          video: [
+            {
+              ...track,
+              baseUrl:
+                mode === "denied"
+                  ? "https://synthetic.edge.mountaintoys.cn:4483/video.mp4"
+                  : mode === "malformed"
+                    ? "invalid"
+                    : cdn,
+              backup_url: ["https://backup.bilivideo.com/video.mp4"],
+            },
+          ],
+        },
+      },
+      media: () => {
+        if (++attempts === 1 && mode === "http")
+          return new Response("", { status: 500 });
+        if (attempts === 1 && mode === "body")
+          return new Response(
+            new ReadableStream({
+              start(controller) {
+                controller.error(new Error("PRIVATE_BODY_ERROR"));
+              },
+            }),
+          );
+        return new Response("SYNTHETIC_VIDEO");
+      },
+    });
+    const result = await visual(f);
+    assert.equal(
+      result.usage.requests,
+      ["denied", "malformed"].includes(mode) ? 2 : 3,
+    );
+    assert.equal(new URL(f.calls.at(-1).url).hostname, "backup.bilivideo.com");
+    cleaned(f);
+  }
+});
+
+test("visual CDN fallback stops on platform risk, oversized response and exhausted request budget", async (t) => {
+  for (const mode of ["risk", "large", "budget"]) {
+    const f = fixture(t, {
+      data: {
+        dash: {
+          video: [
+            { ...track, backupUrl: ["https://backup.bilivideo.com/video.mp4"] },
+          ],
+        },
+      },
+      ...(mode === "budget" ? { limits: { requests: 2 } } : {}),
+      media: () => {
+        if (mode === "risk") return new Response("", { status: 412 });
+        if (mode === "large")
+          return new Response("", {
+            headers: { "content-length": String(33 * 1024 * 1024) },
+          });
+        throw new Error("synthetic reset");
+      },
+    });
+    await assert.rejects(
+      visual(f),
+      (error) =>
+        error.code ===
+        {
+          risk: "PLATFORM_PAUSED",
+          large: "RESPONSE_TOO_LARGE",
+          budget: "REQUESTS_BUDGET",
+        }[mode],
+    );
+    assert.equal(f.calls.length, 2);
+    assert.equal(f.service.store.getControl("visual:" + f.reading.id), null);
+    if (mode === "risk") assert.ok(f.service.store.getControl("pause"));
+    cleaned(f);
+  }
+});
+
 test("dependency preflight, missing reading, duration and prior cancellation refuse before download", async (t) => {
   const missing = fixture(t, { scenario: "no-deps" });
   await assert.rejects(

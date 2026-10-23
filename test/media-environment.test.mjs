@@ -1,6 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync, existsSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  existsSync,
+  realpathSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import {
@@ -14,7 +20,9 @@ import {
 } from "../lib/media-environment.mjs";
 import { Service } from "../lib/service.mjs";
 
-const root = () => mkdtempSync(join(tmpdir(), "humanism-setup-"));
+// macOS tmpdir() traverses /var -> /private/var; fixtures use the real root,
+// while production noLinks() continues to reject user-supplied symlinks.
+const root = () => realpathSync(mkdtempSync(join(tmpdir(), "humanism-setup-")));
 function managed(
   dir,
   data = { version: 1, frames: true, asr: true, model: true },

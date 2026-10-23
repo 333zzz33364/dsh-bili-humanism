@@ -127,6 +127,38 @@ test("available subtitle track takes precedence over A2 fragments and avoids opt
   assert.equal(calls.at(-1).request.headers.Cookie, undefined);
 });
 
+test("adding a provided device cookie invalidates the session-only empty cache without bypassing a pause", async (t) => {
+  const f = fixture(t, { noTracks: true, summaryOnly: true });
+  assert.equal((await f.service.read(bv)).result.route, "none");
+  assert.equal((await f.service.read(bv)).usage.requests, 0);
+  writeFileSync(
+    f.credentialPath,
+    JSON.stringify({ sessdata: secret, buvid3: "synthetic-existing-device" }),
+  );
+  const refreshed = await f.service.read(bv);
+  assert.ok(refreshed.usage.requests > 0);
+  assert.equal(refreshed.result.cached, false);
+  assert.equal(
+    f.calls.at(-1).request.headers.Cookie,
+    `SESSDATA=${secret}; buvid3=synthetic-existing-device`,
+  );
+  assert.equal((await f.service.read(bv)).usage.requests, 0);
+  f.service.store.pause("SYNTHETIC_RISK");
+  writeFileSync(
+    f.credentialPath,
+    JSON.stringify({
+      sessdata: secret,
+      buvid3: "synthetic-other-existing-device",
+    }),
+  );
+  const before = f.calls.length;
+  await assert.rejects(
+    f.service.read(bv),
+    (error) => error.code === "PERSISTENT_PAUSE",
+  );
+  assert.equal(f.calls.length, before);
+});
+
 for (const mode of ["noTracks", "emptyTrack", "unavailableTrack"]) {
   test(`A2 remains a fallback after ${mode}`, async (t) => {
     const { service, calls } = fixture(t, {
