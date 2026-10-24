@@ -317,6 +317,7 @@ test("registered tools ignore old over-limit session controls and never request 
       }),
     });
     assert.ok(journal.id);
+    await call("personality", { action: "read", journalId: journal.id });
     assert.equal(
       (
         await call("personality", {

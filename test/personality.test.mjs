@@ -20,9 +20,11 @@ import {
 
 function fixture(config = {}) {
   const root = mkdtempSync(join(tmpdir(), "humanism-personality-"));
+  let clock = "2026-10-21T00:00:00.000Z";
   const service = new Service(
     { dataDir: root, ...config },
     {
+      personality: { now: () => clock },
       fetcher: () =>
         assert.fail("Local personality learning must not request network"),
     },
@@ -41,6 +43,7 @@ function fixture(config = {}) {
     sentence = "合成反思：为尚未了解的处境保留空间。",
     created = "2026-10-20T16:30:00.000Z",
   ) {
+    clock = created;
     const raw = {
       encounter: "Synthetic fixture",
       revision: sentence,

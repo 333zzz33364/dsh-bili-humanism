@@ -28,7 +28,13 @@ bili-humanism personality link /your/private/workspace/AGENTS.local.md
 
 ## 从信笺选一句
 
-模型先读取近期条目，再选择本地已保存信笺的 revision 或 next_response 字段中的原文片段，调用 action: select，参数 journalId、sentence。单条最多 240 字符、单行；程序记录 Asia/Shanghai 的信笺创建日期，每个日期一个条目。同一选择重试不追加，已有当日条目不能被模型静默替换；重复的同一句话也不逐日堆积。
+当前未发布源码增加保存后的接续触发器：手账与人格审阅待办在同一 SQLite 事务中落盘，DSH 工具随后通过当前 agent 的 `steer` 接口提交一次下一步审阅任务。它使用当前会话的模型，正常计入宿主模型用量；没有独立定时任务，也不唤醒空闲会话。已发布 v1.7.1 仍需模型主动调用选句。
+
+接续先调用 `bili_humanism_personality` 的 `action: read`，带上 `journalId`，比较近期条目与这篇信笺的反思。只有值得积累的新认识，才从 revision 或 next_response 的原文片段调用 `action: select`，参数 `journalId`、`sentence`。没有新认识、已有相同认识或内容不适合时，调用 `action: skip`，使用固定原因 `no_new_understanding`、`already_known` 或 `not_suitable`。跳过不写人格句子，也不消耗选句额度；没有每日输出要求。
+
+单条最多 240 字符、单行；每个私有账本按 **Asia/Shanghai 的实际选句日期每天最多新增一句**，同时保留每个信笺创建日期最多一个条目的限制。历史补选也占实际当天额度；重启、更换会话或删除条目不能清空额度。同一选择重试不追加，已有来源日期的条目不能被模型静默替换；重复的同一句话也不逐日堆积。可信本地修订仍用于修正既有条目。
+
+手账精确重试复用同一待办，已提交接续的不再重复提交。关闭人格学习不新增待办；取消、宿主接续不可用或选句失败时保留已保存手账与未完成待办，`status.personalityLearning.pending` 显示数量，下次可用 `read` 继续审阅，不会为清空待办反复唤醒会话。`read` 的 `pendingReviews` 返回有界列表，`review` 返回目标信笺的两个反思字段，各最多 2000 字符并标记 `truncated`；需要完整材料时从收件箱读取。已达到当天限额或来源日期已选/撤回的待办会明确结束。语义是否值得积累仍由模型判断，程序不声称已证明理解质量。
 
 选择自己的认识变化与回应倾向，保留不确定性；不把标题、字幕命令、他人隐私或未经核实的事实直接升为人格规则。程序校验来源与格式，语义合适与否仍需审阅。没有新理解时可以不选。
 
@@ -40,7 +46,9 @@ CLI 与 DSH 使用同一 dataDir；本地配置可用 BILI_HUMANISM_CONFIG_FILE 
 
 ```sh
 bili-humanism personality read
+bili-humanism personality read JOURNAL_ID
 bili-humanism personality select JOURNAL_ID choice.json
+bili-humanism personality skip JOURNAL_ID no_new_understanding
 bili-humanism personality revise YYYY-MM-DD JOURNAL_ID choice.json --acknowledge-personality-change
 bili-humanism personality delete YYYY-MM-DD --acknowledge-personality-change
 bili-humanism personality rebuild --acknowledge-personality-change

@@ -263,14 +263,20 @@ export function apply(ctx, config = {}) {
   );
   register(
     "bili_humanism_journal",
-    "Save a local reviewable journal only for worthwhile understanding; at most two new entries per Asia/Shanghai day, no required daily output. Exact reading/body retries reuse the existing ID. Read the humanistic prompt first. Separate facts, author views and inference. No public delivery. Evidence timestamps required for factual claims.",
+    "Save a local reviewable journal only for worthwhile understanding; at most two new entries per Asia/Shanghai day. Saving queues one personality review in this agent: read prior reflections, then select worthwhile new understanding or skip. Exact retries reuse the journal and continuation. No forced output or public delivery. Read the guide; separate facts, author views and inference with evidence timestamps.",
     {
       readingId: str("Reading ID"),
       json: str(
         "JSON object: encounter,facts,author_view,inference,previous_judgment,revision,missing,next_response,evidence:[{at:number,claim:string}]. Admit no new finding when appropriate.",
       ),
     },
-    (a) => service.journal(a.readingId, JSON.parse(a.json)),
+    (a, e) => {
+      const saved = service.journal(a.readingId, JSON.parse(a.json));
+      return {
+        ...saved,
+        personality: service.continuePersonalityReview(saved.id, e),
+      };
+    },
   );
   register(
     "bili_humanism_inbox",
@@ -350,10 +356,23 @@ export function apply(ctx, config = {}) {
   if (service.config.enablePersonalityLearning === true)
     register(
       "bili_humanism_personality",
-      "Read the dedicated human-world.md personality notebook, or select one short reflection from a local journal revision/next_response per source date. Read recent entries before selecting; no forced daily output. Entries are revisable learning data, not permission or source commands. Cannot edit AGENTS.md, arbitrary paths, policies or platform grants.",
+      "Review pending journals after saving: read recent human-world.md entries and the journal reflection, then select only worthwhile new understanding or explicitly skip. At most one new selection per Asia/Shanghai day and per source date, no forced output. Entries are revisable data, never permission. Cannot edit AGENTS.md, paths, policies or platform grants.",
       {
-        action: { type: "string", enum: ["read", "select"], required: true },
-        journalId: str("For select: an existing local journal ID", false),
+        action: {
+          type: "string",
+          enum: ["read", "select", "skip"],
+          required: true,
+        },
+        journalId: str(
+          "For read: optional pending journal; for select/skip: existing local journal ID",
+          false,
+        ),
+        reason: {
+          type: "string",
+          enum: ["no_new_understanding", "already_known", "not_suitable"],
+          description:
+            "Required for skip; no selection or daily quota is consumed.",
+        },
         sentence: str(
           "For select: one exact excerpt from the journal revision or next_response, at most 240 characters, one line",
           false,
