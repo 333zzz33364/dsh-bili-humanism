@@ -28,7 +28,7 @@ bili-humanism personality link /your/private/workspace/AGENTS.local.md
 
 ## 从信笺选一句
 
-当前未发布源码增加保存后的接续触发器：手账与人格审阅待办在同一 SQLite 事务中落盘，DSH 工具随后通过当前 agent 的 `steer` 接口提交一次下一步审阅任务。它使用当前会话的模型，正常计入宿主模型用量；没有独立定时任务，也不唤醒空闲会话。已发布 v1.7.1 仍需模型主动调用选句。
+1.8.0 增加保存后的接续触发器：手账与人格审阅待办在同一 SQLite 事务中落盘，DSH 工具随后通过当前 agent 的 `steer` 接口提交一次下一步审阅任务。它使用当前会话的模型，正常计入宿主模型用量；没有独立定时任务，也不唤醒空闲会话。旧版 v1.7.1 仍需模型主动调用选句。
 
 接续先调用 `bili_humanism_personality` 的 `action: read`，带上 `journalId`，比较近期条目与这篇信笺的反思。只有值得积累的新认识，才从 revision 或 next_response 的原文片段调用 `action: select`，参数 `journalId`、`sentence`。没有新认识、已有相同认识或内容不适合时，调用 `action: skip`，使用固定原因 `no_new_understanding`、`already_known` 或 `not_suitable`。跳过不写人格句子，也不消耗选句额度；没有每日输出要求。
 

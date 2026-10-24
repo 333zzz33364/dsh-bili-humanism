@@ -1,28 +1,28 @@
-# DSH B站内容学习插件 v1.7.1 离线安装说明
+# DSH B站内容学习插件 v1.8.0 离线安装说明
 
-适用范围：Windows x64、DeepSeek Harness（DSH）`0.2.1-rc.2`、插件 `v1.7.1`。
+适用范围：Windows x64、DeepSeek Harness（DSH）`0.2.1-rc.2`、插件 `v1.8.0`。
 
 本说明使用本地 `.tgz` 安装插件，不需要从 GitHub 克隆源码，也不运行构建或安装脚本。B站读取、账号登录和云端模型对话仍需要各自的网络连接。
 
 ## 安装前先核对 GitHub 版本
 
-**无论由人还是 agent 执行，安装或更新前，只要当前网络连接与访问策略允许，就必须先到 [GitHub Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 核对版本号；存在与当前 DSH 兼容的较新版本时，下载并使用较新版本。不要把网盘中的 v1.7.1 固定当作最新版，也不要覆盖已经安装的更高版本。**
+**无论由人还是 agent 执行，安装或更新前，只要当前网络连接与访问策略允许，就必须先到 [GitHub Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 核对版本号；存在与当前 DSH 兼容的较新版本时，下载并使用较新版本。不要把网盘中的 v1.8.0 固定当作最新版，也不要覆盖已经安装的更高版本。**
 
-查看完整发布列表及对应发布说明，包括预览版标记、DSH 版本要求、验收范围与已知问题；不要只依赖可能不包含预览版的 `/releases/latest`。选择新版时，从同一 Release 下载 `.tgz` 和 `SHA256SUMS.txt`，按该版本说明安装。下文文件名和验收范围对应随附的 v1.7.1；选择新版时，以其文件名、同版校验文件和说明为准。
+查看完整发布列表及对应发布说明，包括预览版标记、DSH 版本要求、验收范围与已知问题；不要只依赖可能不包含预览版的 `/releases/latest`。选择新版时，从同一 Release 下载 `.tgz` 和 `SHA256SUMS.txt`，按该版本说明安装。下文文件名和验收范围对应随附的 v1.8.0；选择新版时，以其文件名、同版校验文件和说明为准。
 
 无法连接 GitHub 或访问策略不允许时，可以继续使用校验通过、与宿主兼容的离线包，并明确记录“未完成在线版本核对”；恢复允许连接后再核对。无需为检查版本绕过网络限制，也不因此启用后台任务或修改平台写入开关。
 
 ## 1. 准备文件
 
-离线分发可使用两个独立 ZIP：
+从 GitHub Release 安装时，直接下载同版 `.tgz` 与 `SHA256SUMS.txt`。如果从网盘取得离线分发，可能使用两个独立 ZIP（本说明不表示这些 ZIP 已上传）：
 
 - `DeepSeek-Harness-0.2.1-rc.2-Windows-x64-Original.zip`：DSH 官方 Windows 安装器；已装好相同版本的用户可继续使用现有安装。
-- `dsh-bili-humanism-v1.7.1.zip`：本插件安装包、说明和校验文件。
+- `dsh-bili-humanism-v1.8.0.zip`：本插件安装包、说明和校验文件。
 
-先安装 DSH，再解压插件 ZIP。进入内层 `dsh-bili-humanism-v1.7.1` 文件夹，应能看到：
+先安装 DSH，再解压插件 ZIP。进入内层 `dsh-bili-humanism-v1.8.0` 文件夹，应能看到：
 
 ```text
-dsh-bili-humanism-1.7.1.tgz
+dsh-bili-humanism-1.8.0.tgz
 SHA256SUMS.txt
 README.md
 安装说明.txt
@@ -32,10 +32,10 @@ README.md
 
 ## 2. 核对安装包
 
-在上述文件夹的地址栏输入 `powershell` 并回车，打开 PowerShell。以下为随附 v1.7.1 的校验示例；如果已按前文选择新版，须将 `$PluginFile` 改为新版 `.tgz` 路径，并在同一目录放好同一 Release 的 `SHA256SUMS.txt`，再执行校验：
+在上述文件夹的地址栏输入 `powershell` 并回车，打开 PowerShell。以下为随附 v1.8.0 的校验示例；如果已按前文选择新版，须将 `$PluginFile` 改为新版 `.tgz` 路径，并在同一目录放好同一 Release 的 `SHA256SUMS.txt`，再执行校验：
 
 ```powershell
-$PluginFile = (Resolve-Path -LiteralPath '.\dsh-bili-humanism-1.7.1.tgz').Path
+$PluginFile = (Resolve-Path -LiteralPath '.\dsh-bili-humanism-1.8.0.tgz').Path
 $ChecksumRows = @(Get-Content -LiteralPath '.\SHA256SUMS.txt' | ForEach-Object {
     $Fields = $_ -split '\s+', 2
     if ($Fields.Count -eq 2 -and $Fields[1].TrimStart([char]'*') -eq (Split-Path $PluginFile -Leaf) -and $Fields[0] -match '^[a-fA-F0-9]{64}$') {
@@ -99,7 +99,7 @@ dsh --profile web --dump-config
 
 > 调用 bili_humanism_guide 和 bili_humanism_status，检查插件是否加载。先不要访问 B站或执行账号写入。
 
-默认启用人格积累，本插件注册 13 个工具；显式关闭人格积累时为 12 个。历史、收藏、点赞和投币分别默认关闭，评论接口保持关闭。
+每日取稿默认关闭，默认启用人格积累，本插件注册 14 个工具；显式关闭人格积累时为 13 个。历史、收藏、点赞和投币分别默认关闭，评论接口保持关闭。
 
 每份取稿的估算 token 上限在可信插件配置中使用 `maxReadTokens` 设置，默认 `600000`；可人工设高或设低，保存后重载，每份独立计额。旧 `maxSessionTokens` 继续兼容，新字段显式填写时优先。估算按正文 UTF-8 字节数保守计算，不是服务商账单上限。详见[取稿额度](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/blob/main/docs/TOKEN_BUDGET.md)。
 
@@ -125,9 +125,9 @@ dsh --profile web --dump-config
 
 ## 验证范围与来源
 
-已在 Windows DSH 桌面内置 CLI `0.2.1-rc.2` 中，用新的隔离 profile、空插件 store、`--offline`、禁用安装脚本及不可达的外部 HTTP 代理，完成 v1.7.1 `.tgz` 安装、配置层检查和 guide/status 工具调用。测试未使用用户 profile、账号凭据、真实模型或 B站请求。
+已在 Windows DSH 桌面内置 CLI `0.2.1-rc.2` 中，用新的隔离 profile、空插件 store、`--offline`、禁用安装脚本及不可达的外部 HTTP 代理，完成 v1.8.0 `.tgz` 安装、配置层检查和 guide/status 工具调用。测试未使用用户 profile、账号凭据、真实模型或 B站请求。
 
 这一结果验证上述条件下的插件离线安装；没有据此宣称在全新 Windows 系统上从零准备所有工具的流程已验收。桌面插件管理界面的离线导入未单独验收。
 
-- [插件 v1.7.1 发布页](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases/tag/v1.7.1)
+- [插件 v1.8.0 发布页](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases/tag/v1.8.0)
 - [DSH 官方插件安装文档（固定版本）](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.2/docs/user/develop/basic/publish.zh.md)

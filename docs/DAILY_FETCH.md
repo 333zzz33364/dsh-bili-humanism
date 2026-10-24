@@ -1,6 +1,6 @@
 # 每日取稿
 
-当前源码（尚未发布）的每日取稿**默认关闭**。省略 `enableDailyFetching` 或设为 `false` 时，不创建取稿计时器、不发起每日取稿请求，也不占用当天尝试。已发布的 1.6.0–1.7.1 默认开启，需要立即关闭时请显式设置 `enableDailyFetching: false` 并重载。
+从 1.8.0 起，每日取稿**默认关闭**。省略 `enableDailyFetching` 或设为 `false` 时，不创建取稿计时器、不发起每日取稿请求，也不占用当天尝试。已发布的 1.6.0–1.7.1 默认开启，需要立即关闭时请显式设置 `enableDailyFetching: false` 并重载。
 
 只有本人在可信配置中显式设为 `enableDailyFetching: true` 后，插件才在 **DSH 宿主运行时**每天按北京时间（Asia/Shanghai）21:30 启动一次文字取稿，22:00 为硬截止。窗口内首次启动宿主会立即尝试；窗口外启动则等下一天。不会启动已关闭的 Desktop、唤醒电脑或补跑昨天的任务，也不依赖 Codex/Windows 定时任务。
 
