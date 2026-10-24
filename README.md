@@ -16,7 +16,7 @@
 
 1.7.1 新增取稿后的离线质检：`probe` 与 `audio-profile` 只读本地账本和本地媒体，不联网、不带凭据、不调用模型，输出字数与分段覆盖、按全片和按有声段两种口径的字/分钟、专名形态分布、拉丁串与紧贴中文的短碎片、含繁体字形行数。它报告信号，不判定专名对错或语义质量；同一写法稳定地错，和稳定地对，在这个探针里看起来一样。见[取稿后的离线质检](docs/QUALITY.md)。
 
-保留 1.6.0 内置的每日北京时间 21:30 启动一次文字取稿，22:00 截止，最多保存 2 份新稿；宿主需保持运行，空稿不计成功，重启不重复。`setup-media` 独立依赖安装和 `doctor` 诊断保留，可明确下载 ASR 模型；纯文本模型仍不能接收图片。见[每日取稿](docs/DAILY_FETCH.md)和[依赖安装](docs/LOCAL_FRAMES.md)。
+当前源码（尚未发布）将每日取稿改为**默认关闭**；只有在可信配置中显式设置 `enableDailyFetching: true` 才会调度。开启后保留北京时间 21:30 启动、22:00 截止、最多保存 2 份新稿的规则；宿主需保持运行，空稿不计成功，重启不重复。已发布 v1.7.1 仍沿用旧默认值，需要立即关闭时请设为 `false` 并重载。`setup-media` 独立依赖安装和 `doctor` 诊断保留，可明确下载 ASR 模型；纯文本模型仍不能接收图片。见[每日取稿](docs/DAILY_FETCH.md)和[依赖安装](docs/LOCAL_FRAMES.md)。
 
 保留 1.5.0 取消音频下载、ASR 和抽帧默认的 600 秒时长拦截，长视频按全片时长均匀采样；仍受下载大小、处理时间、请求数和帧数预算约束。保留每份取稿独立的 token 额度、最高 480p 下载、原生图片附件与中间视频自动清理。可选人工时长限额见[媒体预算](docs/MEDIA_LIMITS.md)，Python 依赖见[本地抽帧说明](docs/LOCAL_FRAMES.md)。
 
@@ -144,7 +144,7 @@ dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.7.1
 | 点赞 / 投币         | 独立开关、状态回读与预算已实现，离线测试覆盖；真实账号写入未实测                                              |
 | 人格成长            | 专用 human-world.md、按信笺日期选句、分页、来源追踪与可信本地修订/撤回；默认开启，可显式关闭                  |
 | 评论 / 其他表达     | 评论、私信、动态、关注、投稿未实现，不由四项写入权限放行                                                      |
-| 定时 / 私人通知     | 宿主运行时每天 21:30–22:00 取最多 2 份新文字稿；无外部私人通知适配器                                          |
+| 定时 / 私人通知     | 当前源码默认关闭每日取稿；显式开启后，宿主运行时每天 21:30–22:00 取最多 2 份新文字稿；无外部私人通知适配器 |
 
 `no_subtitles`、`read_failed`、`asr_partial`、`visual_text_partial` 分开记录。空稿的语音状态保持 `unknown`；不根据空文本推断“无语音”。字幕时间跨度只衡量文字片段，不代表完整观影或正确率。缓存有效期 6 小时，以视频、分 P、读取版本与本地登录态摘要分隔；内容去重保留 CID 和文字版本。手动导入的来源保留未独立核实标记。
 
@@ -165,7 +165,7 @@ dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.7.1
     dataDir: /your/private/bili-humanism
     credentialPath: /your/private/credential.json
     # 使用 setup-media 后无需填写 pythonPath；人工配置仍优先。
-    enableDailyFetching: true
+    enableDailyFetching: false
     dailyFetchStart: "21:30"
     dailyFetchEnd: "22:00"
     dailyFetchLimit: 2

@@ -47,6 +47,8 @@ try {
 
 默认匿名读取，人格积累默认开启，历史、收藏、点赞与投币四项账号写入分别默认关闭。账号凭据、可选媒体依赖和平台权限均不是 `guide` / `status` 加载检查的前置条件。空稿、需要登录或媒体能力缺失应按返回的状态处理，不能据此认定整个插件未安装。
 
+当前源码（尚未发布）的每日取稿默认关闭，需要时由本人设置 `enableDailyFetching: true` 并重载，见[每日取稿](DAILY_FETCH.md)。已发布 v1.7.1 仍默认开启；下面的显式 `false` 配置也可用于关闭旧版调度。
+
 匿名返回 `subtitles=[]` 不能证明视频没有字幕：部分字幕轨可能只在有效登录态下返回，具体可用性随来源和平台变化。从 1.7.1 起，允许可信 `credentialPath` JSON 同时提供 `sessdata` 和可选的现有 `buvid3`，读取 API GET 会携带该设备值；不自动获取或生成设备 Cookie，字幕/媒体 CDN 不收到凭据。提供设备值后缓存身份独立，原缓存保留；这不保证解决 HTTP 412，遇 401/403/412/429 或 API 风控仍持久暂停，由本人核对风险后决定是否恢复。不要照反馈中的建议反复探测或取消暂停规则。
 
 ## 配置文件的具体位置
@@ -66,6 +68,7 @@ $DSH_HOME/profiles/<实际 profile 名>/cordis.patch.yml
   config:
     maxReadTokens: 600000
     enablePersonalityLearning: true
+    enableDailyFetching: false
     enableHistoryWrites: false
     enableFavoriteWrites: false
     enableLikeWrites: false

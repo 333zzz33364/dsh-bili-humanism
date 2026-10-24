@@ -1,3 +1,9 @@
+# 未发布：每日取稿默认关闭 — 2026-10-24
+
+DSH 配置 schema 与直接创建 Service 的默认值均改为关闭。36 个 JavaScript 文件语法检查及 **161/161 项 Windows 离线测试**通过，其中 19 项每日取稿测试与 1 项宿主工具契约测试单独复核通过：省略开关或显式 `false` 时，即使位于取稿窗口内也不创建计时器、网络请求、任务或当天记录；显式 `true` 仍按原窗口、预算、持久去重及最多两份新稿执行。默认人格工具仍注册，平台写入工具仍默认不注册。
+
+测试使用合成平台响应；本次没有真实 B站请求、模型调用或账号写入。已更新配置示例、升级和回滚说明；没有修改使用中的 DSH profile。此变更尚未发布，也未完成其最终包隔离真实宿主验收，不沿用下面 v1.7.1 的发布证据。
+
 # 1.7.1 验收与发布门 — 2026-10-23
 
 基于公开 v1.7.0 / `75d5b8bec6e5e953ed7b3ac647d9d7d91280c8e6` 的维护修复。巡检发现 [CDN 连接重置反馈 #7](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/issues/7)、[读取设备 Cookie 反馈 #5](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/issues/5) 与 [macOS 主分支 CI 失败](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/actions/runs/39815818135)。CI 日志有两项安装器测试失败：临时目录穿过系统符号链接，触发 `VISUAL_PATH_DENIED` 或回退到系统 Python；修复只规范化测试夹具根目录，未放宽生产检查。

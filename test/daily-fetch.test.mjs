@@ -18,7 +18,8 @@ function fixture(t, config = {}, options = {}) {
   const calls = [];
   const timers = [];
   const service = new Service(
-    { dataDir: root, ...config },
+    // Scheduling scenarios explicitly opt in; undefined exercises omission.
+    { dataDir: root, enableDailyFetching: true, ...config },
     {
       daily: {
         now: () => clock,
@@ -116,13 +117,21 @@ function fixture(t, config = {}, options = {}) {
   };
 }
 
-test("daily defaults are enabled, Shanghai 21:30–22:00, at most two text sources", () => {
+test("daily defaults are disabled, retaining the opt-in Shanghai window and two-source limit", () => {
   const config = Config({});
-  assert.equal(config.enableDailyFetching, true);
+  assert.equal(config.enableDailyFetching, false);
   assert.equal(config.dailyFetchStart, "21:30");
   assert.equal(config.dailyFetchEnd, "22:00");
   assert.equal(config.dailyFetchLimit, 2);
+  assert.equal(dailyConfig().enabled, false);
   assert.equal(dailyConfig().timeZone, "Asia/Shanghai");
+  for (const enabled of [true, false]) {
+    assert.equal(
+      Config({ enableDailyFetching: enabled }).enableDailyFetching,
+      enabled,
+    );
+    assert.equal(dailyConfig({ enableDailyFetching: enabled }).enabled, enabled);
+  }
   for (const bad of [
     { enableDailyFetching: "true" },
     { enableDailyFetching: null },
@@ -165,6 +174,23 @@ test("outside the window or disabled does not fetch or claim a day", async (t) =
   assert.equal(disabled.worker.running, false);
   assert.equal((await disabled.worker.runDue()).status, "disabled");
   assert.equal(disabled.calls.length, 0);
+});
+
+test("omitted or false daily config creates no timer, requests or day claim inside the window", async (t) => {
+  for (const enabled of [undefined, false]) {
+    const f = fixture(t, { enableDailyFetching: enabled });
+    f.worker.start();
+    assert.equal(f.service.status().dailyFetching.enabled, false);
+    assert.equal(f.service.status().scheduled, false);
+    assert.equal(f.worker.nextAt, null);
+    assert.equal(f.timers.length, 0);
+    assert.equal((await f.worker.runDue()).status, "disabled");
+    assert.equal(f.calls.length, 0);
+    assert.equal(f.service.store.getControl("daily-fetch:2026-01-02"), null);
+    assert.equal(f.service.store.getControl("daily-fetch:last"), null);
+    assert.equal(f.service.store.readings().length, 0);
+    assert.equal(f.service.store.status().tasks.length, 0);
+  }
 });
 
 test("one daily task saves two real text sources under shared budgets without writing journals or accounts", async (t) => {

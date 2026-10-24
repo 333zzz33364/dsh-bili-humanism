@@ -61,9 +61,9 @@ export const Config = z.object({
   enablePersonalityLearning: z.boolean().default(true),
   enableDailyFetching: z
     .boolean()
-    .default(true)
+    .default(false)
     .description(
-      "Automatically prefetch text sources once per Asia/Shanghai day while the DSH host is running.",
+      "Opt-in text prefetch once per Asia/Shanghai day while the DSH host is running. Disabled by default; human config only.",
     ),
   dailyFetchStart: z
     .string()

@@ -29,7 +29,9 @@ test("pinned real DSH defineTool validates every registration and executes guide
     await tools.get("bili_humanism_status").execute({}, {}),
   );
   assert.deepEqual(status.platformWriteTools, []);
-  assert.equal(status.scheduled, true);
+  assert.equal(status.scheduled, false);
+  assert.equal(status.dailyFetching.enabled, false);
+  assert.equal(status.dailyFetching.nextAt, null);
   assert.equal(status.dailyFetching.start, "21:30");
   assert.equal(status.dailyFetching.end, "22:00");
   const injected = JSON.parse(
