@@ -41,8 +41,8 @@ function fixture(t, config = {}) {
   apply(
     {
       tools: { register: (tool) => tools.set(tool.name, tool) },
-      on: (_event, fn) => {
-        dispose = fn;
+      effect: (setup) => {
+        dispose = setup();
       },
     },
     { dataDir: root, ...config },

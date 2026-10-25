@@ -62,8 +62,8 @@ test("public journal tool deduplicates retries and shares a durable two-entry da
           tools.set(t.name, t);
         },
       },
-      on(_e, fn) {
-        dispose = fn;
+      effect(setup) {
+        dispose = setup();
       },
     },
     { dataDir: f.root, enableDailyFetching: false },
@@ -352,8 +352,8 @@ test("registered tool keeps small inbox arrays and requires stable snapshots for
           tools.set(t.name, t);
         },
       },
-      on(_e, fn) {
-        dispose = fn;
+      effect(setup) {
+        dispose = setup();
       },
     },
     { dataDir: root, enableDailyFetching: false },

@@ -403,6 +403,6 @@ export function apply(ctx, config = {}) {
       },
       (a, e) => service.platformWrite("coins", a, e?.signal),
     );
-  ctx.on("dispose", () => service.close());
+  ctx.effect(() => () => service.close());
   service.dailyFetcher.start();
 }

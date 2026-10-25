@@ -228,8 +228,8 @@ test("registered visual tools expose IDs and offsets, never model-supplied paths
           tools.set(tool.name, tool);
         },
       },
-      on(_event, fn) {
-        dispose = fn;
+      effect(setup) {
+        dispose = setup();
       },
     },
     { dataDir: f.root, enableDailyFetching: false },
@@ -312,8 +312,8 @@ test("one read tool call automatically chooses unified visual work and attaches 
             tools.set(tool.name, tool);
           },
         },
-        on(_event, fn) {
-          dispose = fn;
+        effect(setup) {
+          dispose = setup();
         },
       },
       { dataDir: f.root, enableDailyFetching: false },

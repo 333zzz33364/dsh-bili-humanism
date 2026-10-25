@@ -1,5 +1,7 @@
 # DSH B站内容学习插件
 
+兼容维护：修复卸载后未关闭账本与调度器的问题，同时支持 **DSH 0.2.1-rc.2 / rc.3**，保留旧版用法与设置。验证范围与复现见 [DSH 兼容说明](docs/DSH_COMPATIBILITY.md)。
+
 **桌面版安装入口：本插件尚未收录进推荐插件市场的精选目录，市场搜索或粘贴仓库 URL 可能无法安装。请使用本地发布包；桌面版自带的 CLI 已验证可用。**
 
 1. 从 [GitHub Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 下载同一版本的 `.tgz` 和 `SHA256SUMS.txt`，按[安装说明第一步](docs/WINDOWS_INSTALL.md#1-下载并校验发布包)核对 SHA-256。

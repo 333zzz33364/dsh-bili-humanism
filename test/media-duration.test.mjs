@@ -217,8 +217,8 @@ test("host config and CLI preserve optional human limits, never model overrides"
           tools.set(t.name, t);
         },
       },
-      on(_event, fn) {
-        dispose = fn;
+      effect(setup) {
+        dispose = setup();
       },
     },
     { dataDir: join(root, "host"), enableDailyFetching: false },

@@ -170,8 +170,8 @@ test("write switches register only selected capabilities and have no default tra
             tools.set(t.name, t);
           },
         },
-        on(_event, fn) {
-          dispose = fn;
+        effect(setup) {
+          dispose = setup();
         },
       },
       {
@@ -579,8 +579,8 @@ test("all sixteen independent switch combinations register correctly and never e
             tools.set(t.name, t);
           },
         },
-        on(_e, fn) {
-          dispose = fn;
+        effect(setup) {
+          dispose = setup();
         },
       },
       { ...config, enableDailyFetching: false },
