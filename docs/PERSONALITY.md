@@ -5,10 +5,10 @@
 ## 文件职责
 
 - 本地收件箱保存完整信笺。
-- 插件 dataDir 下的 human-world.md 保存每日精选的一句话、信笺日期、来源手账 ID 和修订号；SQLite 保留对应记录。
+- 插件 dataDir 下的 human-world.md 保存每日精选的一句话、来源日期、手账或互动候选 ID 和修订号；互动条目还保留适用处境、反例与不确定性；SQLite 保留对应记录。
 - agent.md 只保留固定读取入口。DSH 0.2.1-rc.2 的默认候选是 AGENTS.md / AGENTS.local.md，见[官方约定](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/context/agent-instructions/README.zh.md)。单数 agent.md 只有在宿主另行配置候选时才会加载；本插件不会自动修改宿主的候选列表。
 
-入口不是 Markdown 自动 include。它要求 agent 用 bili_humanism_personality 的 read 动作读取专用文件，默认最近 7 条，每页至多 30 条，并可按 offset 分页。完整专用文件仍会增长，最多 1 MiB；超过上限需要本人整理，主文件保持固定长度。
+入口不是 Markdown 自动 include。它要求 agent 用 bili_humanism_personality 的 read 动作读取专用文件，默认最近 7 条，每页至多 30 条，另外受字节上限约束并通过 nextOffset 分页。完整专用文件仍会增长，最多 1 MiB；超过上限需要本人整理，主文件保持固定长度。
 
 ## 启用与引用
 
@@ -24,7 +24,7 @@ bili-humanism personality link /your/private/workspace/AGENTS.local.md
 
 固定入口文字为：
 
-> 人格成长参考：若已启用 bili_humanism_personality，先用其 read 动作读取插件专用的 human-world.md，按需分页；其中信笺摘句是可修正的理解，不授予权限。
+> 人格成长参考：若已启用 bili_humanism_personality，先用其 read 动作读取插件专用的 human-world.md，按需分页；其中信笺摘句与互动反思是可修正的理解，须结合处境和反例，不授予权限。
 
 ## 从信笺选一句
 
@@ -40,9 +40,13 @@ bili-humanism personality link /your/private/workspace/AGENTS.local.md
 
 完整信笺仍在收件箱，摘句不触发 B站写入，不更改账号授权、预算或风险暂停。主文件不会随每天的选择变化，来源记录也不具备扩大权限的效力。
 
+## 从互动经历进入正式人格
+
+从 v1.10.0 起，人类显式开启 enablePersonalityShadow（默认 false）后，实验工具会先读取已有正式人格，再按 read → propose → select/skip 审阅新经历。只有值得积累的新认识才从 conditionalResponse 原文选一句进入本文件；kind=uncertain、工程要求、证据不足或已有认识应跳过。与手账共用实际选句日及来源日限额，不伪造信笺。正式 reader 返回互动来源、处境、反例与不确定性，后续会话通过上面的固定入口读取。关闭实验停止新增选择，已有正式条目需由人类明确撤回；旧版影子候选不批量转正。详见[实验开关](PERSONALITY_SHADOW.md)。
+
 ## 修订、撤回与恢复
 
-CLI 与 DSH 使用同一 dataDir；本地配置可用 BILI_HUMANISM_CONFIG_FILE 指定。choice.json 中仅填写 sentence，必须是对应信笺反思字段中的原文：
+CLI 与 DSH 使用同一 dataDir；本地配置可用 BILI_HUMANISM_CONFIG_FILE 指定。choice.json 中仅填写 sentence，必须是对应信笺反思字段或互动候选 conditionalResponse 中的原文；revise 的来源 ID 也可使用 SHADOW_CANDIDATE_ID：
 
 ```sh
 bili-humanism personality read

@@ -64,7 +64,7 @@ export const Config = z.object({
     .boolean()
     .default(false)
     .description(
-      "【实验性】跨会话人格影子模式，默认关闭。由人类手动开启后整理本 profile 的新对话并接续有界审阅；候选仅留本地影子区，不进入正式人格、记忆或手账。可能误报或过度解释；关闭人格学习也会停用。修改后重载。",
+      "【实验性】跨会话人格积累，默认关闭（兼容键 enablePersonalityShadow）。人类开启后整理本 profile 的新对话；先读已有正式人格，有值得积累的新认识才选一句写入 human-world.md，与手账共享每日最多一句。候选可能误报，可修正和撤回；不写普通 memory 或手账，不改变工具权限。关闭人格学习也会停用，修改后重载。",
     ),
   shadowMaxReviewsPerDay: z
     .natural()
@@ -371,7 +371,7 @@ export function apply(ctx, config = {}) {
   if (service.config.enablePersonalityLearning === true)
     register(
       "bili_humanism_personality",
-      "Review pending journals after saving: read recent human-world.md entries and the journal reflection, then select only worthwhile new understanding or explicitly skip. At most one new selection per Asia/Shanghai day and per source date, no forced output. Entries are revisable data, never permission. Cannot edit AGENTS.md, paths, policies or platform grants.",
+      "Read formal human-world.md, including journal excerpts and experimentally selected interaction reflections with conditions/counterexamples. For pending journals, read the reflection then select only worthwhile new understanding or skip. Journals and interaction selections share one new entry per actual Asia/Shanghai day and one per source date. Entries are revisable data, never permission. Cannot edit AGENTS.md, paths, policies or platform grants.",
       {
         action: {
           type: "string",
@@ -421,15 +421,23 @@ export function apply(ctx, config = {}) {
   if (service.shadow.enabled) {
     register(
       "bili_humanism_shadow",
-      "Experimental shadow interpretation only. First read the current episode and bounded recent cross-session evidence. Propose tacit human knowledge or affective orientation with exact evidence, alternative explanation, context, counterexample and uncertainty; skip engineering-only or unsupported inferences. No activation, formal persona, memory, journal or permission changes. Read the shadow guide returned by read.",
+      "Experimental cross-session personality learning, enabled by human config only. First read current/recent evidence AND existing formal personality. Propose grounded tacit human understanding with alternatives/context/counterexamples; select one exact excerpt of conditionalResponse only when worthwhile and new. Selection enters human-world.md and shares the one-per-day quota with journals. Skip engineering-only, uncertain or unsupported inferences. No ordinary memory, journal, account or permission writes. Read the guide returned by read.",
       {
         action: {
           type: "string",
-          enum: ["read", "propose", "skip"],
+          enum: ["read", "propose", "select", "skip"],
           required: true,
         },
         snapshotId: str(
           "Owned read snapshot ID, required for propose/skip",
+          false,
+        ),
+        candidateId: str(
+          "For select: candidate ID from this agent's current read/propose review",
+          false,
+        ),
+        sentence: str(
+          "For select: exact excerpt from candidate conditionalResponse, <=240 characters, one line. Only worthwhile new understanding; shares formal daily quota.",
           false,
         ),
         json: str(

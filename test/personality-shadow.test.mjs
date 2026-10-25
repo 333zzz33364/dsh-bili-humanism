@@ -1,11 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, existsSync } from "node:fs";
+import { mkdtempSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Service } from "../lib/service.mjs";
 import { attachPersonalityShadow } from "../lib/personality-shadow-host.mjs";
 import { apply } from "../index.js";
+import { revisePersonality, deletePersonality } from "../lib/personality.mjs";
 
 function fixture(config = {}) {
   const root = mkdtempSync(join(tmpdir(), "humanism-shadow-"));
@@ -15,6 +16,7 @@ function fixture(config = {}) {
     { dataDir: root, enablePersonalityShadow: true, ...config },
     {
       shadow: { now: () => clock },
+      personality: { now: () => new Date(clock).toISOString() },
       fetcher: () => assert.fail("No platform traffic"),
     },
   );
@@ -104,6 +106,16 @@ test("organizer uses visible human ingress, links preceding response and next re
   f.emit("a", "Synthetic prior assistant", "assistant");
   const human = f.emit("a", "我只是想分享这件小事。");
   f.emit("a", "谢谢你把这个细节告诉我。", "assistant");
+  f.emit("a", "", "assistant", {
+    content: [
+      {
+        type: "tool-call",
+        id: "synthetic-call",
+        name: "synthetic",
+        arguments: "{}",
+      },
+    ],
+  });
   f.emit("a", "Synthetic injected notice", "user", {
     source: { kind: "agent-instructions" },
   });
@@ -226,7 +238,7 @@ test("proposals require exact owned read evidence and current human quote; ident
   assert.throws(
     () =>
       f.shadow.tool(
-        { action: "select", snapshotId: s.snapshotId },
+        { action: "promote", snapshotId: s.snapshotId },
         f.exec("a"),
       ),
     { code: "SHADOW_INVALID_ACTION" },
@@ -436,7 +448,7 @@ test("reopen preserves evidence and candidates, trusted erasure leaves formal da
   );
   reopened.close();
 });
-test("native tool registration exposes only shadow read/propose/skip when opt-in", async () => {
+test("native experimental tool is opt-in and exposes no force or path override", async () => {
   const tools = new Map(),
     disposers = [];
   const root = mkdtempSync(join(tmpdir(), "shadow-contract-"));
@@ -453,7 +465,7 @@ test("native tool registration exposes only shadow read/propose/skip when opt-in
   assert.equal(
     JSON.parse(await tool.execute({ action: "read" }, { agent: { id: "a" } }))
       .mode,
-    "shadow",
+    "experimental_personality",
   );
   assert.equal(
     JSON.parse(
@@ -465,6 +477,319 @@ test("native tool registration exposes only shadow read/propose/skip when opt-in
     "UNKNOWN_PARAMETER",
   );
   for (const fn of disposers) fn();
+});
+
+function prepareSelection(f, owner = "a", change = {}) {
+  f.emit(
+    owner,
+    "Synthetic: I am sharing this moment; please let me finish before giving a plan.",
+  );
+  const snapshot = f.read(owner),
+    body = { ...proposal(snapshot), ...change };
+  const saved = f.shadow.tool(
+    {
+      action: "propose",
+      snapshotId: snapshot.snapshotId,
+      json: JSON.stringify(body),
+    },
+    f.exec(owner),
+  );
+  const args = {
+    action: "select",
+    candidateId: saved.id,
+    sentence: body.conditionalResponse,
+  };
+  return {
+    snapshot,
+    body,
+    saved,
+    args,
+    select: () => f.shadow.tool(args, f.exec(owner)),
+  };
+}
+function syntheticJournal(f, created = "2026-10-24T10:00:00Z") {
+  const reading = f.service.store.saveReading({
+    bvid: "BV0000000001",
+    page: 1,
+    cid: 1,
+    duration: 60,
+    title: "Synthetic quota fixture",
+    route: "A1",
+    segments: [],
+    coverage: { state: "no_subtitles" },
+  });
+  const sentence = "合成手账反思：把未了解的部分保留为疑问。";
+  const id = f.service.store.note(reading.id, {
+    encounter: "Synthetic",
+    missing: "Synthetic limits",
+    revision: sentence,
+    next_response: "",
+    evidence: [],
+  });
+  f.service.store.db
+    .prepare("UPDATE notes SET created=? WHERE id=?")
+    .run(created, id);
+  return { journalId: id, sentence };
+}
+
+test("explicit experiment select enters formal personality with context/provenance, survives reopen and exact retries", () => {
+  const f = fixture();
+  const p = prepareSelection(f);
+  assert.equal(p.saved.status, "pending_selection");
+  assert.equal(p.snapshot.formalPersonality.total, 0);
+  assert.equal(f.service.personality("read").total, 0);
+  const selected = p.select();
+  assert.equal(selected.active, true);
+  assert.equal(selected.sourceKind, "interaction");
+  assert.equal(selected.candidateId, p.saved.id);
+  const official = f.service.personality("read");
+  assert.equal(official.total, 1);
+  assert.equal(official.entries[0].sentence, p.body.conditionalResponse);
+  assert.equal(official.entries[0].counterexample, p.body.counterexample);
+  const text = readFileSync(join(f.root, "human-world.md"), "utf8");
+  assert.ok(
+    text.includes(p.saved.id) &&
+      text.includes("适用处境") &&
+      text.includes("反例"),
+  );
+  assert.equal(
+    f.service.store.db.prepare("SELECT count(*) n FROM notes").get().n,
+    0,
+  );
+  assert.equal(
+    f.service.store.db.prepare("SELECT count(*) n FROM memory").get().n,
+    0,
+  );
+  assert.equal(p.select().status, "already_selected");
+  f.service.close();
+  const reopened = new Service({
+    dataDir: f.root,
+    enablePersonalityShadow: true,
+  });
+  assert.equal(reopened.personality("read").entries[0].candidateId, p.saved.id);
+  assert.equal(reopened.shadow.inspect().candidatesPage[0].active, true);
+  reopened.close();
+});
+
+test("journal-first and interaction-first selections share the same actual-day quota across source dates", () => {
+  for (const journalFirst of [true, false]) {
+    const f = fixture(),
+      journal = syntheticJournal(f),
+      p = prepareSelection(f);
+    if (journalFirst) {
+      f.service.personality("select", journal);
+      assert.throws(p.select, { code: "PERSONALITY_DAILY_LIMIT" });
+      assert.equal(
+        f.shadow.inspect().candidatesPage[0].status,
+        "pending_selection",
+      );
+    } else {
+      p.select();
+      assert.throws(() => f.service.personality("select", journal), {
+        code: "PERSONALITY_DAILY_LIMIT",
+      });
+    }
+    assert.equal(f.service.personality("read").total, 1);
+    f.service.close();
+  }
+});
+
+test("interaction selections preserve source-day quota and late retries do not spend tomorrow's quota", () => {
+  const f = fixture(),
+    first = prepareSelection(f);
+  first.select();
+  f.nextDay();
+  assert.equal(first.select().status, "already_selected");
+  const current = prepareSelection(f, "b", {
+    conditionalResponse: "合成反思：在新的处境中先核对对方现在要什么。",
+  });
+  assert.equal(current.select().active, true);
+  f.nextDay();
+  const human = f.emit("c", "Synthetic different same-source-day encounter");
+  // Trusted fixture stamps the genuine source time, independent of selection day.
+  const row = f.service.store.db
+    .prepare("SELECT id FROM shadow_episodes WHERE user_id=?")
+    .get(human.message.id);
+  f.service.store.db
+    .prepare("UPDATE shadow_episodes SET created=? WHERE id=?")
+    .run(Date.parse("2026-10-25T12:00:00Z"), row.id);
+  const read = f.read("c"),
+    body = {
+      ...proposal(read),
+      conditionalResponse: "合成反思：另一个同来源日的理解不应挤掉既有条目。",
+    };
+  const saved = f.shadow.tool(
+    {
+      action: "propose",
+      snapshotId: read.snapshotId,
+      json: JSON.stringify(body),
+    },
+    f.exec("c"),
+  );
+  assert.throws(
+    () =>
+      f.shadow.tool(
+        {
+          action: "select",
+          candidateId: saved.id,
+          sentence: body.conditionalResponse,
+        },
+        f.exec("c"),
+      ),
+    { code: "PERSONALITY_DAY_ALREADY_SELECTED" },
+  );
+  f.service.close();
+});
+
+test("uncertain, skipped, wrong-owner and arbitrary-sentence candidates cannot enter formal personality", () => {
+  const f = fixture(),
+    p = prepareSelection(f, "a", { kind: "uncertain" });
+  assert.throws(p.select, { code: "INTERACTION_UNDERSTANDING_UNCERTAIN" });
+  assert.throws(() => f.shadow.tool(p.args, f.exec("foreign")), {
+    code: "INTERACTION_SELECTION_REVIEW_REQUIRED",
+  });
+  f.shadow.tool(
+    {
+      action: "skip",
+      snapshotId: p.snapshot.snapshotId,
+      reason: "insufficient_context",
+    },
+    f.exec("a"),
+  );
+  assert.throws(p.select, { code: "INTERACTION_CANDIDATE_NOT_SELECTABLE" });
+  const other = prepareSelection(f, "b");
+  assert.throws(
+    () =>
+      f.shadow.tool(
+        {
+          ...other.args,
+          sentence: "Invented understanding that was never proposed",
+        },
+        f.exec("b"),
+      ),
+    { code: "PERSONALITY_REFLECTION_REQUIRED" },
+  );
+  assert.equal(f.service.personality("read").total, 0);
+  f.service.close();
+});
+
+test("a candidate needs today's formal-context read, cancellation preserves it for a resumed review", () => {
+  const f = fixture(),
+    p = prepareSelection(f);
+  assert.throws(
+    () =>
+      f.shadow.tool(p.args, {
+        agent: { id: "a" },
+        signal: AbortSignal.abort(),
+      }),
+    { code: "CANCELLED" },
+  );
+  f.nextDay();
+  assert.throws(p.select, { code: "INTERACTION_SELECTION_REVIEW_REQUIRED" });
+  const resumed = f.read("a");
+  assert.equal(resumed.candidate.id, p.saved.id);
+  assert.equal(resumed.formalPersonality.total, 0);
+  assert.equal(p.select().active, true);
+  f.service.close();
+});
+
+test("legacy shadow candidates are not promoted or automatically backfilled on upgrade", () => {
+  const f = fixture(),
+    p = prepareSelection(f);
+  f.service.store.db
+    .prepare("UPDATE shadow_candidates SET status='shadow' WHERE id=?")
+    .run(p.saved.id);
+  f.service.store.db
+    .prepare(
+      "UPDATE shadow_episodes SET status='shadow' WHERE id=(SELECT episode_id FROM shadow_candidates WHERE id=?)",
+    )
+    .run(p.saved.id);
+  f.service.store.db
+    .prepare("DELETE FROM control WHERE key LIKE 'shadow:selection-%'")
+    .run();
+  assert.equal(f.read("a").pending, false);
+  assert.throws(p.select, { code: "INTERACTION_SELECTION_REVIEW_REQUIRED" });
+  f.shadow.continue({
+    agent: {
+      id: "a",
+      status: "running",
+      steer: () => assert.fail("Legacy candidates cannot wake the agent"),
+    },
+    turn: 1,
+  });
+  assert.equal(f.service.personality("read").total, 0);
+  f.service.close();
+});
+
+test("formal file integrity failure rolls back candidate activation and quotas without discarding it", () => {
+  const f = fixture(),
+    p = prepareSelection(f);
+  writeFileSync(join(f.root, "human-world.md"), "Synthetic unowned human file");
+  assert.throws(p.select, { code: "PERSONALITY_FILE_UNOWNED" });
+  assert.equal(
+    f.shadow.inspect().candidatesPage[0].status,
+    "pending_selection",
+  );
+  assert.equal(
+    f.service.store.getControl("personality:selected-on:2026-10-25"),
+    null,
+  );
+  f.service.close();
+});
+
+test("trusted interaction revision/retraction work; erasure cannot orphan active personality or reset quotas", () => {
+  const f = fixture(),
+    p = prepareSelection(f);
+  p.select();
+  assert.throws(() => f.shadow.erase(), {
+    code: "SHADOW_ACTIVE_PERSONALITY_REQUIRES_RETRACTION",
+  });
+  const revised = revisePersonality(
+    f.service.store,
+    "2026-10-25",
+    p.saved.id,
+    "先回应其珍视的细节",
+  );
+  assert.equal(revised.status, "revised");
+  assert.equal(
+    f.service.personality("read").entries[0].sentence,
+    "先回应其珍视的细节",
+  );
+  deletePersonality(f.service.store, "2026-10-25");
+  assert.equal(f.service.personality("read").total, 0);
+  assert.equal(f.shadow.inspect().candidatesPage[0].active, false);
+  assert.throws(p.select, { code: "INTERACTION_CANDIDATE_NOT_SELECTABLE" });
+  f.shadow.erase();
+  assert.ok(f.service.store.getControl("personality:selected-on:2026-10-25"));
+  assert.ok(f.service.store.getControl("personality:retracted:2026-10-25"));
+  f.service.close();
+});
+
+test("trusted source replacement resolves the new review and retracts both sources on deletion", () => {
+  const f = fixture(),
+    first = prepareSelection(f);
+  first.select();
+  const second = prepareSelection(f, "b", {
+    conditionalResponse: "合成反思：在共同欣赏的处境中留出回应的空间。",
+  });
+  revisePersonality(
+    f.service.store,
+    "2026-10-25",
+    second.saved.id,
+    second.body.conditionalResponse,
+  );
+  assert.equal(f.shadow.status().pending, 0);
+  const rows = f.shadow.inspect().candidatesPage;
+  assert.equal(rows.find((r) => r.id === first.saved.id).active, false);
+  assert.equal(rows.find((r) => r.id === second.saved.id).active, true);
+  deletePersonality(f.service.store, "2026-10-25");
+  assert.ok(
+    f.shadow
+      .inspect()
+      .candidatesPage.every((r) => r.status === "retracted" && !r.active),
+  );
+  assert.equal(f.shadow.erase().shadowErased, true);
+  f.service.close();
 });
 
 test("one review cannot consume old pending episodes, replay cannot release the shadow guard", () => {
