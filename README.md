@@ -110,7 +110,7 @@ flowchart TB
 
 Windows 桌面版请先按[下载、内置 CLI 安装、重开确认这三步](docs/WINDOWS_INSTALL.md)操作；市场拒绝未收录 URL 与本地安装是两个入口。
 
-安装后不知道从哪里用、没有看到设置表单时，先看[安装后使用与配置入口](docs/GETTING_STARTED.md)：确认同一 profile 中已启用，先调用 guide/status，再按需编辑该 profile 的配置文件。本插件当前没有独立图形设置页。
+安装后不知道从哪里用、没有看到设置表单时，先看[安装后使用与配置入口](docs/GETTING_STARTED.md)：确认同一 profile 中已启用，先调用 guide/status，再按需编辑该 profile 的配置文件。在带 Web 界面与 `settings.section` 槽位的 DSH 宿主（例如 DSH 桌面版）中，插件还会在**设置 → 左侧栏「B站内容学习」**提供一页可选设置，覆盖同一批配置项；它不替代配置文件，页面保存的是本地人工覆盖层，见[设置页](docs/SETTINGS_UI.md)。
 
 需要 Node.js 24+、DSH `0.2.1-rc.2`。170 项离线测试通过；本版发布门包括同提交的 Windows/Linux/macOS CI 与最终 tarball 的隔离真实 Windows DSH 安装、Agent 接续及 select/skip 和关闭学习分支，最终哈希与完成结果见对应 [Release](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases/tag/v1.8.0)。1.8.0 默认 14 个工具，显式关闭人格积累为 13 个，连同四项平台开关全部开启为 18 个；`bili_humanism_probe` 只读本地账本、不联网、不调用模型，见[取稿后的离线质检](docs/QUALITY.md)。图片附件协议与模型语义理解分别核验，具体结果见[验收记录](docs/ACCEPTANCE.md)。桌面界面安装、独立 npm CLI 和其他 DSH 版本尚未完成验收。
 
