@@ -691,6 +691,23 @@ test("a candidate needs today's formal-context read, cancellation preserves it f
   assert.equal(resumed.formalPersonality.total, 0);
   assert.equal(p.select().active, true);
   f.service.close();
+  const boundary = fixture(),
+    next = prepareSelection(boundary);
+  let calls = 0;
+  boundary.shadow.clock = () =>
+    calls++ === 0
+      ? Date.parse("2026-10-25T15:59:59.999Z")
+      : Date.parse("2026-10-25T16:00:00Z");
+  assert.equal(next.select().selectedAt, "2026-10-25T15:59:59.999Z");
+  assert.equal(calls, 1);
+  assert.ok(
+    boundary.service.store.getControl("personality:selected-on:2026-10-25"),
+  );
+  assert.equal(
+    boundary.service.store.getControl("personality:selected-on:2026-10-26"),
+    null,
+  );
+  boundary.service.close();
 });
 
 test("legacy shadow candidates are not promoted or automatically backfilled on upgrade", () => {
