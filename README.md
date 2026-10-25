@@ -1,5 +1,7 @@
 # DSH B站内容学习插件
 
+[正式版 v1.8.1](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases/tag/v1.8.1) · 同时支持 DSH rc.2 / rc.3。
+
 兼容维护：修复卸载后未关闭账本与调度器的问题，同时支持 **DSH 0.2.1-rc.2 / rc.3**，保留旧版用法与设置。验证范围与复现见 [DSH 兼容说明](docs/DSH_COMPATIBILITY.md)。
 
 **桌面版安装入口：本插件尚未收录进推荐插件市场的精选目录，市场搜索或粘贴仓库 URL 可能无法安装。请使用本地发布包；桌面版自带的 CLI 已验证可用。**
@@ -110,10 +112,10 @@ Windows 桌面版请先按[下载、内置 CLI 安装、重开确认这三步](d
 
 需要 Node.js 24+、DSH `0.2.1-rc.2`。170 项离线测试通过；本版发布门包括同提交的 Windows/Linux/macOS CI 与最终 tarball 的隔离真实 Windows DSH 安装、Agent 接续及 select/skip 和关闭学习分支，最终哈希与完成结果见对应 [Release](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases/tag/v1.8.0)。1.8.0 默认 14 个工具，显式关闭人格积累为 13 个，连同四项平台开关全部开启为 18 个；`bili_humanism_probe` 只读本地账本、不联网、不调用模型，见[取稿后的离线质检](docs/QUALITY.md)。图片附件协议与模型语义理解分别核验，具体结果见[验收记录](docs/ACCEPTANCE.md)。桌面界面安装、独立 npm CLI 和其他 DSH 版本尚未完成验收。
 
-从 [Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 下载 `dsh-bili-humanism-1.8.0.tgz` 后：
+从 [Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 下载 `dsh-bili-humanism-1.8.1.tgz` 后：
 
 ```sh
-dsh plugin --profile web add ./dsh-bili-humanism-1.8.0.tgz
+dsh plugin --profile web add ./dsh-bili-humanism-1.8.1.tgz
 dsh --profile web --dump-config
 dsh --profile web
 ```
