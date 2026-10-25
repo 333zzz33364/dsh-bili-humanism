@@ -78,7 +78,22 @@ try {
     else if (command === "candidates")
       result = await service.candidates(Number(args[0] || 3));
     else if (command === "status") result = service.status();
-    else if (command === "consumed") {
+    else if (command === "shadow") {
+      if (args[0] === "inspect" && args.length <= 2)
+        result = service.shadow.inspect(
+          args[1] === undefined ? 0 : Number(args[1]),
+        );
+      else if (
+        args[0] === "erase" &&
+        args.length === 2 &&
+        args[1] === "--acknowledge-shadow-erasure"
+      )
+        result = service.shadow.erase();
+      else
+        throw new Error(
+          "Use shadow inspect [OFFSET] or shadow erase --acknowledge-shadow-erasure with enablePersonalityShadow:true in trusted local config",
+        );
+    } else if (command === "consumed") {
       if (args[2] !== "--acknowledge-actual-consumption")
         throw new Error("Missing explicit consumption acknowledgement");
       result = service.confirmConsumption(args[0], Number(args[1]));

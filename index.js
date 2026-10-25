@@ -4,6 +4,7 @@ import { Service, safeError, readingView } from "./lib/service.mjs";
 import { readFileSync } from "node:fs";
 import { need } from "./lib/errors.mjs";
 import { DEFAULT_READ_TOKENS } from "./lib/token-gate.mjs";
+import { attachPersonalityShadow } from "./lib/personality-shadow-host.mjs";
 import {
   attachVisualPage,
   optionalVisualCapability,
@@ -59,6 +60,20 @@ export const Config = z.object({
   writePolicyPath: z.string().default(""),
   accountStateDir: z.string().default(""),
   enablePersonalityLearning: z.boolean().default(true),
+  enablePersonalityShadow: z
+    .boolean()
+    .default(false)
+    .description(
+      "Opt-in capture of new live human/assistant text in this profile's private ledger and bounded in-turn shadow review. Candidates never enter formal personality. Reload after changing.",
+    ),
+  shadowMaxReviewsPerDay: z
+    .natural()
+    .min(1)
+    .max(10)
+    .default(2)
+    .description(
+      "Human-configured maximum automatic shadow review continuations per Asia/Shanghai day in this ledger. Not a provider token or billing cap.",
+    ),
   enableDailyFetching: z
     .boolean()
     .default(false)
@@ -403,6 +418,48 @@ export function apply(ctx, config = {}) {
       },
       (a, e) => service.platformWrite("coins", a, e?.signal),
     );
+  if (service.shadow.enabled) {
+    register(
+      "bili_humanism_shadow",
+      "Experimental shadow interpretation only. First read the current episode and bounded recent cross-session evidence. Propose tacit human knowledge or affective orientation with exact evidence, alternative explanation, context, counterexample and uncertainty; skip engineering-only or unsupported inferences. No activation, formal persona, memory, journal or permission changes. Read the shadow guide returned by read.",
+      {
+        action: {
+          type: "string",
+          enum: ["read", "propose", "skip"],
+          required: true,
+        },
+        snapshotId: str(
+          "Owned read snapshot ID, required for propose/skip",
+          false,
+        ),
+        json: str(
+          "For propose: JSON {kind:tacit_knowledge/affective_orientation/uncertain,observation,possibleMeaning,alternativeMeaning,agentMiss,conditionalResponse,appliesWhen,counterexample,uncertainty,evidence:[{messageId,quote}]}. Every text field required; quote exact visible text; include the current human message. No identity or policy fields.",
+          false,
+        ),
+        reason: {
+          type: "string",
+          enum: [
+            "engineering_only",
+            "insufficient_context",
+            "no_new_understanding",
+            "not_suitable",
+          ],
+        },
+      },
+      (a, e) => ({
+        ...service.shadow.tool(a, e),
+        ...(a.action === "read"
+          ? {
+              guide: readFileSync(
+                new URL("./prompts/personality-shadow.md", import.meta.url),
+                "utf8",
+              ),
+            }
+          : {}),
+      }),
+    );
+    attachPersonalityShadow(ctx, service.shadow);
+  }
   ctx.effect(() => () => service.close());
   service.dailyFetcher.start();
 }
