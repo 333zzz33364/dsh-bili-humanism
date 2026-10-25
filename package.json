@@ -1,6 +1,6 @@
 {
   "name": "dsh-bili-humanism",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "description": "用多彩的人类世界训练 DSH 人格：证据信笺、专用人格札记与人类授权的账号写入",
   "type": "module",
   "main": "index.js",
@@ -34,7 +34,7 @@
     "dsh": ">=0.2.1-rc.2 <0.3.0"
   },
   "peerDependencies": {
-    "@deepseek-ai/dsh-tools": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-tools": "0.2.1-rc.2 || 0.2.1-rc.3",
     "@deepseek-ai/schemastery": "3.18.5"
   },
   "peerDependenciesMeta": {
@@ -57,7 +57,8 @@
   },
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "check": "node scripts/check.mjs"
+    "check": "node scripts/check.mjs",
+    "test:host": "node scripts/test-dsh-host.mjs"
   },
   "repository": {
     "type": "git",

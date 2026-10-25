@@ -308,8 +308,8 @@ test("registered DSH read, import and source tools preserve the reused ASR ID an
   apply(
     {
       tools: { register: (tool) => tools.set(tool.name, tool) },
-      on: (_event, fn) => {
-        dispose = fn;
+      effect: (setup) => {
+        dispose = setup();
       },
     },
     { dataDir: root, enableDailyFetching: false },

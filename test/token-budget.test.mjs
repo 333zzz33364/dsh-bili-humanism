@@ -280,8 +280,8 @@ test("registered tools ignore old over-limit session controls and never request 
           tools.set(tool.name, tool);
         },
       },
-      on(_event, fn) {
-        dispose = fn;
+      effect(setup) {
+        dispose = setup();
       },
       get() {
         throw new Error("Must not inspect unrelated session usage");

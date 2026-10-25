@@ -375,8 +375,8 @@ test("model tools cannot change the trusted daily settings", async () => {
           tools.set(tool.name, tool);
         },
       },
-      on(_event, fn) {
-        dispose = fn;
+      effect(setup) {
+        dispose = setup();
       },
     },
     {

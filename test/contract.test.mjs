@@ -16,9 +16,8 @@ test("pinned real DSH defineTool validates every registration and executes guide
           tools.set(t.name, t);
         },
       },
-      on(event, fn) {
-        assert.equal(event, "dispose");
-        dispose = fn;
+      effect(setup) {
+        dispose = setup();
       },
     },
     { dataDir: mkdtempSync(join(tmpdir(), "humanism-contract-")) },

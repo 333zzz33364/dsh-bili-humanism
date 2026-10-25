@@ -73,8 +73,8 @@ test("dedicated personality tool defaults on, blocks arbitrary paths and exposes
           tools.set(t.name, t);
         },
       },
-      on(_e, fn) {
-        dispose = fn;
+      effect(setup) {
+        dispose = setup();
       },
     },
     { dataDir: f.root, enableDailyFetching: false },
@@ -124,8 +124,8 @@ test("explicitly disabled personality learning removes the tool and rejects sele
           tools.set(t.name, t);
         },
       },
-      on(_event, fn) {
-        dispose = fn;
+      effect(setup) {
+        dispose = setup();
       },
     },
     {
