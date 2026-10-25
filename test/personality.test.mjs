@@ -79,7 +79,7 @@ test("dedicated personality tool defaults on, blocks arbitrary paths and exposes
     },
     { dataDir: f.root, enableDailyFetching: false },
   );
-  assert.equal(tools.size, 14);
+  assert.equal(tools.size, 15);
   const tool = tools.get("bili_humanism_personality");
   const read = JSON.parse(await tool.execute({ action: "read" }, {}));
   assert.equal(read.total, 0);

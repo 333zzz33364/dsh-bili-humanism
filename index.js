@@ -60,6 +60,12 @@ export const Config = z.object({
   writePolicyPath: z.string().default(""),
   accountStateDir: z.string().default(""),
   enablePersonalityLearning: z.boolean().default(true),
+  enablePostViewingQuestions: z
+    .boolean()
+    .default(true)
+    .description(
+      "观影简报后向当前人类用户提一个真正想请教的问题，默认开启。每篇新信笺至多一问，使用当前 agent 的自然语气，允许不问或不回答；不催答、不联网、不自动开启跨会话实验。关闭人格学习也会停用，修改后重载。",
+    ),
   enablePersonalityShadow: z
     .boolean()
     .default(false)
@@ -290,6 +296,7 @@ export function apply(ctx, config = {}) {
       return {
         ...saved,
         personality: service.continuePersonalityReview(saved.id, e),
+        question: service.questions.bind(saved.id, e),
       };
     },
   );
@@ -418,6 +425,63 @@ export function apply(ctx, config = {}) {
       },
       (a, e) => service.platformWrite("coins", a, e?.signal),
     );
+  if (service.questions.enabled)
+    register(
+      "bili_humanism_question",
+      "After a newly saved local viewing journal, read the current review, choose one genuine grounded humanistic uncertainty and prepare it in your own conversational voice, then ask it as your final plain visible sentence. Preparing is not delivery. Never quiz, flatter, pressure, answer for the human, send platform messages or turn silence/a possible reply into agreement or a fixed persona. Skip when no worthwhile question or the user declines.",
+      {
+        action: {
+          type: "string",
+          enum: ["read", "prepare", "skip"],
+          required: true,
+        },
+        journalId: str("New journal ID bound to this current agent review"),
+        question: str(
+          "For prepare: one direct question in your own voice, <=240 characters, one line, exactly one final ? or ？",
+          false,
+        ),
+        field: {
+          type: "string",
+          enum: [
+            "encounter",
+            "inference",
+            "revision",
+            "missing",
+            "next_response",
+            "author_view",
+          ],
+        },
+        quote: str(
+          "For prepare: exact <=240-character excerpt of this journal field grounding your uncertainty",
+          false,
+        ),
+        why: str(
+          "For prepare: why this particular uncertainty matters to understanding people; <=600 characters",
+          false,
+        ),
+        reason: {
+          type: "string",
+          enum: [
+            "no_genuine_question",
+            "not_suitable",
+            "user_declined",
+            "covered_in_dialogue",
+          ],
+        },
+      },
+      (a, e) => ({
+        ...service.questions.tool(a, e),
+        ...(a.action === "read"
+          ? {
+              guide: readFileSync(
+                new URL("./prompts/post-viewing-question.md", import.meta.url),
+                "utf8",
+              ),
+            }
+          : {}),
+      }),
+    );
+  service.questions.attach(ctx);
   if (service.shadow.enabled) {
     register(
       "bili_humanism_shadow",

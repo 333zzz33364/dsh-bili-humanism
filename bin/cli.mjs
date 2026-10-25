@@ -49,7 +49,7 @@ try {
     );
   if (command === "help")
     console.log(
-      'bili-humanism setup-media [--python ABSOLUTE_PYTHON] [--asr --download-model] | doctor | audio READING_ID | local-asr READING_ID local-audio [LOCAL_MODEL] | read BV [part] | probe READING_ID [--names "object=form1,form2"] [--speech-seconds N] [--audio LOCAL_MEDIA] | audio-profile LOCAL_MEDIA | visual READING_ID | visual-frames READING_ID [OFFSET] | local-frames READING_ID local-video.mp4 | candidates [1-3] | status | cancel ID | inbox [index | volume NUMBER SNAPSHOT | rebuild] | journal READING_ID note.json | import READING_ID segments.json | memory list/put/delete [ID] [json-file] | consumed READING_ID SECONDS --acknowledge-actual-consumption | history READING_ID CONSUMPTION_ID | favorite READING_ID FOLDER_ID add/remove | like READING_ID | coin READING_ID [TARGET_TOTAL] | personality read/select/skip/revise/delete/rebuild/link | write-resolve OPERATION_ID applied/not-applied --acknowledge-unknown-result | write-resume --acknowledge-account-risk | resume --acknowledge-account-risk\nConfigure trusted local paths using BILI_HUMANISM_HOME / BILI_HUMANISM_CREDENTIAL_FILE / BILI_HUMANISM_CONFIG_FILE. Never put credential values in command arguments.',
+      'bili-humanism setup-media [--python ABSOLUTE_PYTHON] [--asr --download-model] | doctor | audio READING_ID | local-asr READING_ID local-audio [LOCAL_MODEL] | read BV [part] | probe READING_ID [--names "object=form1,form2"] [--speech-seconds N] [--audio LOCAL_MEDIA] | audio-profile LOCAL_MEDIA | visual READING_ID | visual-frames READING_ID [OFFSET] | local-frames READING_ID local-video.mp4 | candidates [1-3] | status | question inspect [OFFSET] | question delete JOURNAL_ID --acknowledge-question-deletion | cancel ID | inbox [index | volume NUMBER SNAPSHOT | rebuild] | journal READING_ID note.json | import READING_ID segments.json | memory list/put/delete [ID] [json-file] | consumed READING_ID SECONDS --acknowledge-actual-consumption | history READING_ID CONSUMPTION_ID | favorite READING_ID FOLDER_ID add/remove | like READING_ID | coin READING_ID [TARGET_TOTAL] | personality read/select/skip/revise/delete/rebuild/link | write-resolve OPERATION_ID applied/not-applied --acknowledge-unknown-result | write-resume --acknowledge-account-risk | resume --acknowledge-account-risk\nConfigure trusted local paths using BILI_HUMANISM_HOME / BILI_HUMANISM_CREDENTIAL_FILE / BILI_HUMANISM_CONFIG_FILE. Never put credential values in command arguments.',
     );
   else if (command === "setup-media") {
     const options = setupOptions(args);
@@ -78,7 +78,22 @@ try {
     else if (command === "candidates")
       result = await service.candidates(Number(args[0] || 3));
     else if (command === "status") result = service.status();
-    else if (command === "shadow") {
+    else if (command === "question") {
+      if (args[0] === "inspect" && args.length <= 2)
+        result = service.questions.inspect(
+          args[1] === undefined ? 0 : Number(args[1]),
+        );
+      else if (
+        args[0] === "delete" &&
+        args.length === 3 &&
+        args[2] === "--acknowledge-question-deletion"
+      )
+        result = service.questions.delete(args[1]);
+      else
+        throw new Error(
+          "Use question inspect [OFFSET] or question delete JOURNAL_ID --acknowledge-question-deletion with the trusted private dataDir",
+        );
+    } else if (command === "shadow") {
       if (args[0] === "inspect" && args.length <= 2)
         result = service.shadow.inspect(
           args[1] === undefined ? 0 : Number(args[1]),

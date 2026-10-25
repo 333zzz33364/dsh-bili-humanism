@@ -76,7 +76,7 @@ try {
     fiber = ctx.plugin(plugin, plugin.Config ? plugin.Config(config) : config);
     await fiber.await();
     const schemas = ctx.tools.schemas();
-    const expected = { 'dsh-cover-pipeline': 9, 'dsh-train-pipeline': 19, 'dsh-bili-humanism': 14, 'dsh-plugin-updates': 4, 'dsh-research-toolkit': 5 };
+    const expected = { 'dsh-cover-pipeline': 9, 'dsh-train-pipeline': 19, 'dsh-bili-humanism': 15, 'dsh-plugin-updates': 4, 'dsh-research-toolkit': 5 };
     assert.equal(schemas.length, expected[identity]);
     for (const schema of schemas) tools.assertSupportedJsonSchema(schema.parameters);
     if (identity === 'dsh-cover-pipeline') assert.ok((await execute('cover_plan', { request: 'Synthetic compatibility check' })).flow.length);

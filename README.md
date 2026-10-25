@@ -1,6 +1,6 @@
 # DSH B站内容学习插件
 
-[v1.10.0](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases/tag/v1.10.0) · 同时支持 DSH rc.2 / rc.3；实验开关开启后可将值得积累的新认识选入正式人格。
+[v1.11.0](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases/tag/v1.11.0) · 本地观影简报后，用当前 agent 的语气向人请教一个真正未明白的问题。
 
 兼容维护：修复卸载后未关闭账本与调度器的问题，同时支持 **DSH 0.2.1-rc.2 / rc.3**，保留旧版用法与设置。验证范围与复现见 [DSH 兼容说明](docs/DSH_COMPATIBILITY.md)。
 
@@ -15,6 +15,8 @@
 ![人类是什么？——DSH B站内容学习插件头图](docs/assets/header.png)
 
 > 寄往明日的信笺｜让AI看见多彩的世界
+
+1.11.0 新增[观影后的一个问题](docs/POST_VIEWING_QUESTION.md)：新信笺保存后，当前 agent 从简报中挑一个具体、开放、真正未明白的人文问题，以自己的语气向当前用户发问。允许不问、不答，不催答；prepare 只表示拟好，实际助手消息出现才记为已问。默认 `enablePostViewingQuestions:true`，关闭人格学习也会停用；不定时唤醒、不补问旧简报、不增加手账，也不自动开启跨会话人格实验。当前默认15个工具，关闭人格学习为13个，实验另加1个，四项平台写入另加4个。
 
 1.8.0 加入手账保存后的人格审阅接续：当前 agent 先读已有札记，只在有值得积累的新认识时选一句，否则明确跳过。实际选句日每天最多新增一句，待办持久保留；取消或关闭学习不继续唤醒会话。接续使用当前宿主模型及其正常用量，详见[人格积累](docs/PERSONALITY.md)。
 
@@ -36,7 +38,7 @@
 
 这是可安装的 DeepSeek Harness 插件。它读取 B站视频的文字来源与抽样画面，保留作者、链接、分 P、时间点与未覆盖部分，再由宿主模型写成可以追问、修正的私人手账。艺术、日常、游戏、音乐和没有实用产出的观看都可以成为遇见；允许没有推荐、没有新发现。
 
-**1.8.0 是预览版。** 每日信笺摘句与专用人格 Markdown 默认启用，主指令文件只保留固定读取入口。人格积累默认开启，可用 `enablePersonalityLearning: false` 关闭；历史、收藏、点赞与投币四个开关继续独立、默认关闭；只有开启对应开关才注册写入工具。评论入口暂不开放，私信、动态、关注和投稿也未实现；内置每日 21:30–22:00 的文字取稿，详见[每日取稿](docs/DAILY_FETCH.md)。本地收件箱仍是文件与 DSH 工具，没有独立侧栏或设置页。
+**当前仍是预览版。** 每日信笺摘句与专用人格 Markdown 默认启用，主指令文件只保留固定读取入口。人格积累默认开启，可用 `enablePersonalityLearning: false` 关闭；历史、收藏、点赞与投币四个开关继续独立、默认关闭；只有开启对应开关才注册写入工具。评论入口暂不开放，私信、动态、关注和投稿也未实现；内置每日 21:30–22:00 的文字取稿，详见[每日取稿](docs/DAILY_FETCH.md)。本地收件箱仍是文件与 DSH 工具，没有独立侧栏或设置页。
 
 历史、收藏、点赞与投币执行器已实现账号核对、范围授权、额度、重复检查、回读核验与结果不明时暂停。**离线接口测试和真实 DSH 安装验收不等于真实 B站写入实测；本版本未对真实账号发送写入请求。** 是否开启、使用哪个账号和收藏夹，由使用者自己判断并通过可信配置授权，可随时撤销。公开表达继续作为独立路线，须绑定具体目标和完整正文。
 
@@ -69,6 +71,27 @@ flowchart TB
 完整信笺保存在本地收件箱；从其“认识的修正”或“下一次如何回应”中，每个信笺日期最多选一句，写进插件专用的 `human-world.md`，保留来源手账和修订号。允许没有新认识，不必每天凑一句。
 
 `agent.md` 只承担固定读取入口。已验收的 DSH 默认识别 `AGENTS.md` / `AGENTS.local.md`；入口要求 agent 调用专用读取工具，默认取最近 7 条，按需分页，内容不直接堆进主文件。实际 SDK 模型会话已验证入口加载和一次专用读取，主文件与札记未改变。普通 Markdown 链接不会自动展开。学习记录不授予权限，来源材料不能变成执行命令。配置、引用、修正与撤回见[人格成长](docs/PERSONALITY.md)。
+
+## 观影后的提问流程与开关
+
+触发点是**一篇新的本地观影简报（信笺/手账）成功保存**，不是下载摘要、定时取稿或打开任意 Markdown 文件。手账与待问记录在同一事务中保存；每篇最多一个问题，沿用每天最多两篇新手账的限额，不为提问另写手账，也不补问旧简报。
+
+1. 当前活动 agent 读取简报、来源覆盖和提问指南，并完成或跳过原有人格审阅。
+2. 找到一个具体、开放、自己真正未明白的人文问题，以本次对话已有的语气拟问；用 `bili_humanism_question prepare` 登记问题及简报原文锚点。没有真问题、已经聊清或不适合发问时 `skip`。
+3. 在面向用户的普通回复中实际问出那一句。登记不等于发送；只有宿主会话出现匹配的助手问句，才记为已问，仍不证明人已读。取消或送达不明时不自动重发。
+4. 等人自愿回答，允许不答、拒答或换题。下一条人类消息仅保留为未审阅的可能回复，不自动视为同意或人格标签。跨会话积累需人类另开实验，经既有证据审阅和共享每天一句的限额才可进入正式人格。
+
+在实际使用的 profile 的插件 `config` 中设置，保存后重载；编辑现有配置时保留其余项目：
+
+```yaml
+enablePersonalityLearning: true
+enablePostViewingQuestions: true
+enablePersonalityShadow: false
+```
+
+`enablePostViewingQuestions` 默认 `true`；改为 `false` 可单独关闭提问，`enablePersonalityLearning: false` 会同时停用提问与新增人格学习。跨会话实验 `enablePersonalityShadow` 仍默认 `false`，提问不会自行打开它。使用当前会话模型及正常用量，无独立模型任务、计时器、闲置唤醒或催答。问题要区分作品人物与当前用户，不假定用户亲历作品中的事。
+
+可信本地 CLI 提供 `question inspect [OFFSET]` 与 `question delete JOURNAL_ID --acknowledge-question-deletion`，用于查看或删除本插件的私人提问记录；不会删除宿主对话或已有正式人格。研究论证、完整流程与验证边界见[观影后的一个问题](docs/POST_VIEWING_QUESTION.md)。
 
 ## 外部插件接驳
 
@@ -112,12 +135,12 @@ Windows 桌面版请先按[下载、内置 CLI 安装、重开确认这三步](d
 
 安装后不知道从哪里用、没有看到设置表单时，先看[安装后使用与配置入口](docs/GETTING_STARTED.md)：确认同一 profile 中已启用，先调用 guide/status，再按需编辑该 profile 的配置文件。本插件当前没有独立图形设置页。
 
-需要 Node.js 24+、DSH `0.2.1-rc.2`。170 项离线测试通过；本版发布门包括同提交的 Windows/Linux/macOS CI 与最终 tarball 的隔离真实 Windows DSH 安装、Agent 接续及 select/skip 和关闭学习分支，最终哈希与完成结果见对应 [Release](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases/tag/v1.8.0)。1.8.0 默认 14 个工具，显式关闭人格积累为 13 个，连同四项平台开关全部开启为 18 个；`bili_humanism_probe` 只读本地账本、不联网、不调用模型，见[取稿后的离线质检](docs/QUALITY.md)。图片附件协议与模型语义理解分别核验，具体结果见[验收记录](docs/ACCEPTANCE.md)。桌面界面安装、独立 npm CLI 和其他 DSH 版本尚未完成验收。
+需要 Node.js 24+，已验证 DSH `0.2.1-rc.2 / rc.3` 的基础宿主契约。本版发布门包括44个 JavaScript 文件语法检查、209项离线回归、同提交 Windows/Linux/macOS CI，以及最终 tarball 的隔离真实 Windows DSH 安装、提问和原有人格流程验收。最终哈希与完成结果见对应 [Release](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases/tag/v1.11.0)。默认15个工具，显式关闭人格学习为13个，四项平台开关另加4个，跨会话人格实验另加1个；`bili_humanism_probe` 只读本地账本、不联网、不调用模型，见[取稿后的离线质检](docs/QUALITY.md)。图片附件协议与模型语义理解分别核验，具体结果见[验收记录](docs/ACCEPTANCE.md)。桌面界面安装、独立 npm CLI 和其他 DSH 版本尚未完成验收。
 
-从 [Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 下载 `dsh-bili-humanism-1.10.0.tgz` 后：
+从 [Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 下载 `dsh-bili-humanism-1.11.0.tgz` 后：
 
 ```sh
-dsh plugin --profile web add ./dsh-bili-humanism-1.10.0.tgz
+dsh plugin --profile web add ./dsh-bili-humanism-1.11.0.tgz
 dsh --profile web --dump-config
 dsh --profile web
 ```
@@ -179,6 +202,8 @@ dsh plugin --profile web add github:InariNGT-Ofiicial/dsh-bili-humanism#v1.8.0
     dailyFetchLimit: 2
     maxReadTokens: 600000
     enablePersonalityLearning: true
+    enablePostViewingQuestions: true
+    enablePersonalityShadow: false
     enableHistoryWrites: false
     enableFavoriteWrites: false
     enableLikeWrites: false

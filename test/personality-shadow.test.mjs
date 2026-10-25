@@ -460,7 +460,7 @@ test("native experimental tool is opt-in and exposes no force or path override",
     },
     { dataDir: root, enablePersonalityShadow: true },
   );
-  assert.equal(tools.size, 15);
+  assert.equal(tools.size, 16);
   const tool = tools.get("bili_humanism_shadow");
   assert.equal(
     JSON.parse(await tool.execute({ action: "read" }, { agent: { id: "a" } }))

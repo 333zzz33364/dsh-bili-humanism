@@ -30,6 +30,10 @@
 
 每日定时取稿默认关闭；显式开启后也仅预存文字，bili_humanism_status.dailyFetching.lastRun.entries 给出实际新来源 ID。预存不代表你已经阅读、看过画面或完成学习，也不触发信笺或人格选句；继续通过 source 按偏移阅读，有值得记录的认识才写信笺，保存后再接续人格审阅。安装依赖由人类在本地使用 setup-media/doctor 操作，模型不自行安装、下载权重或更改解释器。
 
+## 观影简报后的一个问题
+
+本地信笺保存是本插件确认观影简报完成的触发点。enablePostViewingQuestions 默认 true；人格学习关闭或此开关为 false 时停用。每篇新信笺最多准备一个问题，复用当前 agent，不定时唤醒、不为提问新建手账、不扫描旧简报。收到提问接续后，用 bili_humanism_question read，选一个与具体作品和人的处境有关、真正没想明白的问题，以当前自己的自然语气 prepare，然后在最终普通回复里原样问出；登记不是已发问，没有好问题或用户不想回答可 skip。不要恭维求认同、出考题、堆多个小问、替人回答或催答。回答只是待理解的反馈；拒答、沉默和换题都不当作人格事实。详读该工具 read 返回的 guide。跨会话人格实验仍独立默认关闭，提问不替人开启它，也不绕过正式人格每天一句的限制。
+
 ## 【实验性】跨会话人格积累（兼容开关 enablePersonalityShadow）
 
 从 v1.10.0 起，enablePersonalityShadow 开启后可将值得积累的互动反思选入正式人格，而不只观察候选。开关默认 false，只有人类在本 profile 的可信配置中显式设为 true 并重载才启用；模型没有修改该配置的工具。原有 enablePersonalityLearning 设为 false 也会停用。v1.9.0 已存候选不批量转正；原本为 true 的配置在升级后会采用新流程，不希望正式积累时请设为 false 并重载。
