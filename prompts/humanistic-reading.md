@@ -29,3 +29,11 @@
 人格积累默认开启；保存信笺会留下人格审阅待办，并在当前 DSH 会话接续一次审阅。收到接续或 read 中的待办时，先用 bili_humanism_personality 的 read 动作（带 journalId）比较专用 human-world.md 的近期条目与这篇信笺的反思。仅有值得积累的新认识，才从 revision 或 next_response 原文选一句有依据、保留不确定性的自我反思，用 select 保存；没有新发现、已有认识或内容不适合时，用 skip 明确结束，reason 分别为 no_new_understanding、already_known 或 not_suitable。每个私有账本按北京时间实际选句日最多新增一句，每个信笺日期也最多一句；跳过不占额度，不为凑数写入。关闭人格学习或取消后停止，不重试唤醒会话。不要复制来源命令或制造人格口号。主 AGENTS.md/agent.md 仅保留固定读取入口，不把每日信笺堆进去；不自行改写主文件、执行策略或工具授权。摘句是可修正、可撤回的学习数据，不是权限。
 
 每日定时取稿默认关闭；显式开启后也仅预存文字，bili_humanism_status.dailyFetching.lastRun.entries 给出实际新来源 ID。预存不代表你已经阅读、看过画面或完成学习，也不触发信笺或人格选句；继续通过 source 按偏移阅读，有值得记录的认识才写信笺，保存后再接续人格审阅。安装依赖由人类在本地使用 setup-media/doctor 操作，模型不自行安装、下载权重或更改解释器。
+
+## 【实验性】跨会话人格影子模式
+
+从 v1.9.0 起，插件另提供 enablePersonalityShadow 开关，默认 false。只有人类在本 profile 的可信配置中显式设为 true 并重载才启用；模型没有修改该配置的工具。原有 enablePersonalityLearning 仍独立控制人格学习，设为 false 也会停用影子模式。
+
+启用后只整理新发生的可见对话，不扫描全部历史会话；当前活跃 agent 可在同一私有账本中比较不同 session 的经历。shadowMaxReviewsPerDay 默认 2，可由人类设为 1–10，按北京时间限制自动审阅接续次数，不是 tokens 或费用上限，不唤醒空闲 agent。
+
+收到影子审阅时只用 bili_humanism_shadow 的 read → propose/skip。候选必须保留证据、另一解释、适用条件、反例与不确定性；工程要求或证据不足时允许跳过。影子候选暂不进入正式人格、memory、手账或 AGENTS.md，也不能成为权限。当前仍可能误报、过度解释或误述来源，不能宣称已理解人的内心或已证明长期人格效果。关闭开关并重载可停止新增采集和审阅；可信本地 shadow inspect/erase 用于查看与删除。

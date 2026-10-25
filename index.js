@@ -64,7 +64,7 @@ export const Config = z.object({
     .boolean()
     .default(false)
     .description(
-      "Opt-in capture of new live human/assistant text in this profile's private ledger and bounded in-turn shadow review. Candidates never enter formal personality. Reload after changing.",
+      "【实验性】跨会话人格影子模式，默认关闭。由人类手动开启后整理本 profile 的新对话并接续有界审阅；候选仅留本地影子区，不进入正式人格、记忆或手账。可能误报或过度解释；关闭人格学习也会停用。修改后重载。",
     ),
   shadowMaxReviewsPerDay: z
     .natural()
@@ -72,7 +72,7 @@ export const Config = z.object({
     .max(10)
     .default(2)
     .description(
-      "Human-configured maximum automatic shadow review continuations per Asia/Shanghai day in this ledger. Not a provider token or billing cap.",
+      "实验性影子模式：每个北京时间日的自动审阅接续上限，默认 2 次，可由人类设为 1–10 次。不是模型 tokens 或费用上限。",
     ),
   enableDailyFetching: z
     .boolean()

@@ -30,6 +30,9 @@ test("pinned real DSH defineTool validates every registration and executes guide
   assert.deepEqual(status.platformWriteTools, []);
   assert.equal(status.scheduled, false);
   assert.equal(status.dailyFetching.enabled, false);
+  assert.equal(status.personalityShadow.enabled, false);
+  assert.equal(status.personalityShadow.experimental, true);
+  assert.equal(status.personalityShadow.activePersonalityWrites, false);
   assert.equal(status.dailyFetching.nextAt, null);
   assert.equal(status.dailyFetching.start, "21:30");
   assert.equal(status.dailyFetching.end, "22:00");
@@ -43,6 +46,9 @@ test("pinned real DSH defineTool validates every registration and executes guide
     await tools.get("bili_humanism_guide").execute({}, {}),
   );
   assert.ok(guide.includes("尊严"));
+  assert.ok(
+    guide.includes("【实验性】") && guide.includes("enablePersonalityShadow"),
+  );
   assert.ok(
     ![...tools.keys()].some((n) => /publish|comment|like|resume/.test(n)),
   );

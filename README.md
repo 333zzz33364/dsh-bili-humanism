@@ -1,6 +1,6 @@
 # DSH B站内容学习插件
 
-[正式版 v1.8.1](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases/tag/v1.8.1) · 同时支持 DSH rc.2 / rc.3。
+[v1.9.0](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases/tag/v1.9.0) · 同时支持 DSH rc.2 / rc.3；新增默认关闭的实验性人格影子模式。
 
 兼容维护：修复卸载后未关闭账本与调度器的问题，同时支持 **DSH 0.2.1-rc.2 / rc.3**，保留旧版用法与设置。验证范围与复现见 [DSH 兼容说明](docs/DSH_COMPATIBILITY.md)。
 
@@ -18,7 +18,7 @@
 
 1.8.0 加入手账保存后的人格审阅接续：当前 agent 先读已有札记，只在有值得积累的新认识时选一句，否则明确跳过。实际选句日每天最多新增一句，待办持久保留；取消或关闭学习不继续唤醒会话。接续使用当前宿主模型及其正常用量，详见[人格积累](docs/PERSONALITY.md)。
 
-当前源码另加入未发布的[人格影子模式](docs/PERSONALITY_SHADOW.md)：显式开启后，将新的跨 session 互动整理为有来源的经历，由当前 agent 提出默会知识与情感取向假设；允许跳过，候选单独存储，不进入正式人格。默认关闭，原有功能保留；它不扫描全部历史会话，也不宣称已经证明长期人格效果。
+1.9.0 新增【实验性】[人格影子模式](docs/PERSONALITY_SHADOW.md)：插件配置开关 `enablePersonalityShadow` 默认关闭。人类显式开启并重载后，将新的跨 session 互动整理为有来源的经历，由当前 agent 提出默会知识与情感取向假设；允许跳过，候选单独存储，**暂不进入正式人格、记忆或手账**。`shadowMaxReviewsPerDay` 默认每天最多自动审阅 2 次；原有功能保留，不扫描全部历史会话。当前仍存在误报和来源叙述错误，不宣称语义验收全通过或已证明长期人格效果。
 
 1.7.1 修复瞬时连接失败直接结束取稿的问题：GET 传输异常最多尝试三次，抽帧可沿同清晰度、同尺寸备选 CDN 回退。读取支持本人提供的现有 `buvid3`，不自动生成设备标识；域名/端口清单、POST 单次发送与持久风险暂停保留。见[验收记录](docs/ACCEPTANCE.md)。
 
@@ -114,10 +114,10 @@ Windows 桌面版请先按[下载、内置 CLI 安装、重开确认这三步](d
 
 需要 Node.js 24+、DSH `0.2.1-rc.2`。170 项离线测试通过；本版发布门包括同提交的 Windows/Linux/macOS CI 与最终 tarball 的隔离真实 Windows DSH 安装、Agent 接续及 select/skip 和关闭学习分支，最终哈希与完成结果见对应 [Release](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases/tag/v1.8.0)。1.8.0 默认 14 个工具，显式关闭人格积累为 13 个，连同四项平台开关全部开启为 18 个；`bili_humanism_probe` 只读本地账本、不联网、不调用模型，见[取稿后的离线质检](docs/QUALITY.md)。图片附件协议与模型语义理解分别核验，具体结果见[验收记录](docs/ACCEPTANCE.md)。桌面界面安装、独立 npm CLI 和其他 DSH 版本尚未完成验收。
 
-从 [Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 下载 `dsh-bili-humanism-1.8.1.tgz` 后：
+从 [Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 下载 `dsh-bili-humanism-1.9.0.tgz` 后：
 
 ```sh
-dsh plugin --profile web add ./dsh-bili-humanism-1.8.1.tgz
+dsh plugin --profile web add ./dsh-bili-humanism-1.9.0.tgz
 dsh --profile web --dump-config
 dsh --profile web
 ```
