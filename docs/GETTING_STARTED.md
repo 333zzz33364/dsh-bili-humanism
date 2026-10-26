@@ -83,6 +83,12 @@ profile patch 之后还可能叠加主目录级 patch 和命令行 `--patch`。�
 
 从 1.4.1 起，`maxReadTokens` 是每份取稿独立的估算 token 上限，默认 `600000`，按正文 UTF-8 字节数保守估算，不累计整场对话。旧字段 `maxSessionTokens` 继续兼容；两者同时填写时新字段优先，人工改高或改低后重载。详见[取稿额度](TOKEN_BUDGET.md)。需要账号接入时，再阅读[账号接入](ACCOUNT_INTEGRATION.md)与[写入配置](WRITE_CONFIG.md)，不要在聊天或 issue 中提交 Cookie、密钥或完整配置转储。
 
+## 独立 CLI 的凭据入口
+
+`node bin/cli.mjs ...` 与 DSH profile 配置是两个加载入口。独立 CLI 不自动查找或解析 profile 的 `cordis.patch.yml`；通过 `BILI_HUMANISM_CREDENTIAL_FILE` 显式指定本地凭据 JSON 路径，或通过 `BILI_HUMANISM_CONFIG_FILE` 指定含 `credentialPath` 与 `dataDir` 的私有 JSON 配置。后者的同名字段覆盖环境变量。只引用自己已有的凭据文件，不把凭据值放进命令或公开反馈。
+
+未加载凭据时遇到一般 API 错误，1.11.1 保留 `API_UNAVAILABLE` 并给出上述提示；这不能证明失败原因就是匿名访问。风险码的分类、持久暂停及可信本地恢复流程保持。
+
 ## 当前验证范围
 
 已在 Windows DSH Desktop 内置 CLI `0.2.1-rc.2` 的全新隔离 profile 中，离线安装已发布的 v1.3.4 包，修改该 profile 的 patch，并验证 `--dump-config`、`guide` / `status` 工具执行和配置开关生效。没有使用用户现用 profile、账号凭据、真实模型或 B站请求。这证明文件配置入口可用，不能替代反馈者的安装环境排查或桌面设置界面验收。

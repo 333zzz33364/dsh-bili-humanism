@@ -1,6 +1,6 @@
 # DSH B站内容学习插件
 
-[v1.11.0](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases/tag/v1.11.0) · 本地观影简报后，用当前 agent 的语气向人请教一个真正未明白的问题。
+[v1.11.1](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases/tag/v1.11.1) · 补齐凭据缺失提示、响应字节预算诊断与生效状态。
 
 兼容维护：修复卸载后未关闭账本与调度器的问题，同时支持 **DSH 0.2.1-rc.2 / rc.3**，保留旧版用法与设置。验证范围与复现见 [DSH 兼容说明](docs/DSH_COMPATIBILITY.md)。
 
@@ -135,12 +135,12 @@ Windows 桌面版请先按[下载、内置 CLI 安装、重开确认这三步](d
 
 安装后不知道从哪里用、没有看到设置表单时，先看[安装后使用与配置入口](docs/GETTING_STARTED.md)：确认同一 profile 中已启用，先调用 guide/status，再按需编辑该 profile 的配置文件。本插件当前没有独立图形设置页。
 
-需要 Node.js 24+，已验证 DSH `0.2.1-rc.2 / rc.3` 的基础宿主契约。本版发布门包括44个 JavaScript 文件语法检查、209项离线回归、同提交 Windows/Linux/macOS CI，以及最终 tarball 的隔离真实 Windows DSH 安装、提问和原有人格流程验收。最终哈希与完成结果见对应 [Release](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases/tag/v1.11.0)。默认15个工具，显式关闭人格学习为13个，四项平台开关另加4个，跨会话人格实验另加1个；`bili_humanism_probe` 只读本地账本、不联网、不调用模型，见[取稿后的离线质检](docs/QUALITY.md)。图片附件协议与模型语义理解分别核验，具体结果见[验收记录](docs/ACCEPTANCE.md)。桌面界面安装、独立 npm CLI 和其他 DSH 版本尚未完成验收。
+需要 Node.js 24+，已验证 DSH `0.2.1-rc.2 / rc.3` 的基础宿主契约。本版发布门包括45个 JavaScript 文件语法检查、213项离线回归、同提交 Windows/Linux/macOS CI，以及最终 tarball 的隔离真实 Windows DSH 安装、提问和原有人格流程验收。最终哈希与完成结果见对应 [Release](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases/tag/v1.11.1)。默认15个工具，显式关闭人格学习为13个，四项平台开关另加4个，跨会话人格实验另加1个；`bili_humanism_probe` 只读本地账本、不联网、不调用模型，见[取稿后的离线质检](docs/QUALITY.md)。图片附件协议与模型语义理解分别核验，具体结果见[验收记录](docs/ACCEPTANCE.md)。桌面界面安装、独立 npm CLI 和其他 DSH 版本尚未完成验收。
 
-从 [Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 下载 `dsh-bili-humanism-1.11.0.tgz` 后：
+从 [Releases](https://github.com/InariNGT-Ofiicial/dsh-bili-humanism/releases) 下载 `dsh-bili-humanism-1.11.1.tgz` 后：
 
 ```sh
-dsh plugin --profile web add ./dsh-bili-humanism-1.11.0.tgz
+dsh plugin --profile web add ./dsh-bili-humanism-1.11.1.tgz
 dsh --profile web --dump-config
 dsh --profile web
 ```
@@ -221,6 +221,14 @@ bili-humanism resume --acknowledge-account-risk
 ```
 
 模型工具不提供解除暂停。无自动重试。账本损坏或初始化后的账本丢失会拒绝启动，不悄悄重建一份空账本。
+
+## 读取失败的排查
+
+独立 CLI 不会自动读取 DSH profile 的 `cordis.patch.yml`。需要使用自己已有的读取凭据时，在 CLI 设置 `BILI_HUMANISM_CREDENTIAL_FILE` 为本地凭据 JSON 的路径，或用 `BILI_HUMANISM_CONFIG_FILE` 指向包含 `credentialPath` 的私有 JSON 配置；同时沿用宿主的 `dataDir`（`BILI_HUMANISM_HOME` 或该 JSON 中的 `dataDir`）。JSON 配置中的同名字段优先于环境变量。只填写路径，不把 Cookie 放进命令参数、聊天或 issue。
+
+`API_UNAVAILABLE` 保持为一般 API 不可用分类；未加载凭据只是一个排查方向，不能据此断言来源需要会员或认定平台故障。401/403/412/429 和已知风险码仍持久暂停，补齐配置不会自动解暂停。
+
+1.11.1 补充安全诊断：`RESPONSE_TOO_LARGE` 给出响应字节上限及 `Content-Length` 声明值或已读字节下限；`status.media` 提供 `mediaResponseBytes`、`jsonResponseBytes`、`taskRequests`、`taskWallMs`。来源时长是另一口径：`maxSourceSeconds: null` 表示未设固定时长限额，不表示媒体大小或处理时间无限，也不能从某次下载失败反推秒数门限。详见[媒体预算](docs/MEDIA_LIMITS.md)。
 
 ## 成本和本地 CLI
 

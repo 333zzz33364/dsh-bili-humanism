@@ -21,3 +21,9 @@ maxMediaSeconds: 1200
 原有本地 `limits.asrSeconds` 的显式限额仍有效，且不能超过同时配置的 `maxMediaSeconds`。`status.media.maxSourceSeconds` 为 `null` 表示未设固定时长上限，数值表示实际人工限额。
 
 直接调用可选 `scripts/media.py` 时也不再默认限制为 600 秒；使用者仍可用 `--max-seconds` 明确设限。插件只转发经过校验的人工限额，并独立核对解码时长与来源元数据。整数来源时长允许最多一秒的解码精度差，但该容差不能越过人工限额。非法、非有限或超出安全表示范围的时长始终拒绝。
+
+## 响应字节与时长的诊断（1.11.1）
+
+`RESPONSE_TOO_LARGE` 表示单个响应超出字节上限，不是来源时长门。媒体响应固定最多33554432字节（32 MiB），API/字幕 JSON 固定最多4194304字节（4 MiB）。有 Content-Length 时报告声明值；流式超限时报告已读下限，不假称完整文件大小。错误不回显媒体 URL、签名、凭据或原始平台响应。CLI 与宿主采用同一安全错误序列化。
+
+`status.media.mediaResponseBytes` / `jsonResponseBytes` 是以上固定响应上限，`taskRequests` / `taskWallMs` 是当前配置生效的任务预算，可能小于默认12次/90000毫秒。`maxSourceSeconds` 只描述人工时长上限：null 是未设固定时长门，数值是生效限额。来源较长可能带来更大的文件，但不能用一长一短的成败推算固定秒数上限；相同来源的不同音视频轨大小也不同。这里没有新增调高字节预算的模型参数或人工开关。
